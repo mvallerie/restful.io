@@ -5,7 +5,7 @@
     "coffee-script": "~1.7",
     "markdown": "~0.4"
   },
-  "description": "restful.io ==========",
+  "description": "Restful-like routing module for NodeJS and socket.io",
   "main": "index.js",
   "devDependencies": {
     "coffee-script": "^1.7.1"
