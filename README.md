@@ -24,7 +24,7 @@ Below is a quick presentation of the module. You may check examples subdir for m
 var http = require('http').Server();
 var io = require("socket.io")(http);
 
-var RestfulRouter = require("../work/restful.io/index");
+var RestfulRouter = require("restful.io");
 
 var FooController = {
   bar: function(param) {
