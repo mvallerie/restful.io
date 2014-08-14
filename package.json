@@ -1,0 +1,36 @@
+{
+  "name": "restful.io",
+  "version": "0.0.1",
+  "dependencies": {
+    "coffee-script": "~1.7",
+    "markdown": "~0.4",
+    "socket.io": "~1.0",
+    "underscore": "~1.6.0"
+  },
+  "description": "restful.io ==========",
+  "main": "index.js",
+  "devDependencies": {
+    "coffee-script": "^1.7.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mvallerie/restful.io.git"
+  },
+  "keywords": [
+    "rest",
+    "restful",
+    "routing",
+    "realtime",
+    "socketio",
+    "websocket"
+  ],
+  "author": "Mikael Vallerie <mikael.vallerie@gmail.com>",
+  "license": "GPL3",
+  "bugs": {
+    "url": "https://github.com/mvallerie/restful.io/issues"
+  },
+  "homepage": "https://github.com/mvallerie/restful.io"
+}
