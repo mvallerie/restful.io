@@ -16,7 +16,7 @@ module.exports = class RestfulRouter
   # TODO All the following needs some functional refactoring
 
   bindRoutes: (routes, socket, nestedIn = undefined) =>
-    for event, eventData of @routes
+    for event, eventData of routes
       if Array.isArray(eventData)
         @bindEvent socket, event, eventData
       else if typeof eventData == "object"
@@ -37,14 +37,6 @@ module.exports = class RestfulRouter
           socket.emit "#{eventName}#{@eventSeparator}#{@resultSuffix}", @evalRouteHandler(routeHandler, params)
           return
       if @verbose then @log "No route found for #{eventName} #{uri}"
-
-  ###
-  bindParams: (params, to) =>
-    for pname, pval of params
-      to = to.replace(pname, JSON.stringify(pval))
-      to = to.replace(pname, pval)
-    to
-  ###
 
   # TODO Needs regexp and / or good parsing method
   matchURI: (uri, jsonParams, pattern) =>
