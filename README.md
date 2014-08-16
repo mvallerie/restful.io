@@ -100,13 +100,22 @@ Now on the client side, you can make a GET on /api to retrieve the code :
 var socket = io('http://localhost:8080');
 socket.on('connect', function() {
   // Here we wait for API
-  socket.on('GET:RESULT', function(data) {
+  socket.on('GET:RESULT', function(apiSrc) {
     // You get JS code to eval
-    var API = eval(data)(socket);
+    var API = eval(apiSrc)(socket);
 
-    // All
-    API.GET("/user/1", {}, function(user) {
-      console.log(JSON.stringify(user));
+    // Get foo 1
+    API.GET("/foo/1", {}, function(data) {
+      console.log("Result GET : " + data);
+    });
+
+    API.PUT("/foo/j:user", {
+      user: {
+        name: "John Smith",
+        age: 42
+      }
+    }, function(user) {
+      console.log("Result PUT : " + user);
     });
   });
 
