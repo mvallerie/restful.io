@@ -195,7 +195,7 @@ Here is described the usable parameters when constructing a router :
 | uriSeparator | character | '/' | Used to parse URIs. |
 | parameterPrefix | string | "p:" | Used to identify primitive parameter. |
 | jsonParameterPrefix | string | "j:" | Used to identify complex JSON parameter. |
-| resultSuffix | string | "RESULT" | Used to return a nested method (GET:RESULT, POST:RESULT, ...) |
+| resultSuffix | string | "RESULT" | Default requestId fired to client if requestId not provided (GET:RESULT, POST:RESULT, ...) |
 
 When you start the router, as a third parameter, you may use a callback to handle user connection :
 
