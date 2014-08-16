@@ -2,7 +2,7 @@ toSource = require 'tosource'
 
 module.exports = class RestfulRouter
 
-  constructor: (@ctx, @routes, @verbose = false, @methodSeparator = ':', @uriSeparator = '/', @parameterPrefix = 'p:', @jsonParameterPrefix = 'j:', @resultSuffix = "RESULT") ->
+  constructor: (@ctx, @routes, @verbose = false, @methodSeparator = ':', @uriSeparator = '/', @parameterPrefix = 'p:', @jsonParameterPrefix = 'j:', @resultSuffix = 'RESULT') ->
 
   log: (str) ->
     console.log "[LOG] RestfulRouter: #{str}"
@@ -17,7 +17,6 @@ module.exports = class RestfulRouter
 
 
   # TODO All the following needs some functional refactoring
-  # TODO Change method to method in readme
   bindPublicAPI: () =>
     API = @getPublicAPI(@routes)
     SrcAPI = (API) ->
@@ -25,6 +24,7 @@ module.exports = class RestfulRouter
         return function(socket) {
           var API = #{toSource(API)};
           API.socket = socket;
+          API.requestId = 0;
           return API;
         };
       })()"""
@@ -45,17 +45,14 @@ module.exports = class RestfulRouter
     result = {}
     for method, methodData of routes
       absmethod = if nestedIn? then "#{nestedIn}#{@methodSeparator}#{method}" else method
-      ###
-      localResult = result
-      for e in absmethod.split @methodSeparator
-        localResult = localResult[e]
-      ###
       if Array.isArray(methodData)
         # Here, "socket" variable will be provided by context when API will be evaled on client
         result[method] = eval("""(function() {
-            return function(uri, json) {
-              params = (json != undefined) ? {uri: uri, json: json} : uri;
-              socket.emit('#{method}', params);
+            return function(uri, json, callback) {
+              this.requestId = this.requestId + 1;
+              params = {requestId: this.requestId, uri: uri, json: json};
+              socket.on('#{absmethod}:'+this.requestId, callback);
+              socket.emit('#{absmethod}', params);
             };
           })()""");
       else if typeof methodData == "object"
@@ -66,11 +63,11 @@ module.exports = class RestfulRouter
   bindRoutes: (routes, socket, nestedIn = undefined) =>
     for method, methodData of routes
       if Array.isArray(methodData)
-        @bindmethod socket, method, methodData
+        @bindMethod socket, method, methodData
       else if typeof methodData == "object"
         @bindRoutes methodData, socket, if nestedIn? then "#{nestedIn}#{@methodSeparator}#{method}" else method
 
-  bindmethod: (socket, methodName, methodData) ->
+  bindMethod: (socket, methodName, methodData) ->
     if @verbose then @log "Binding #{methodName}"
     socket.on methodName, (data) =>
       uri = if typeof data == "string" then data else data.uri
@@ -82,7 +79,8 @@ module.exports = class RestfulRouter
         if params
           routeHandler = route.to
           if @verbose then @log "Calling #{routeHandler} for #{methodName} #{uri}"
-          socket.emit "#{methodName}#{@methodSeparator}#{@resultSuffix}", @evalRouteHandler(routeHandler, params)
+          requestId = if data.requestId? then data.requestId else @resultSuffix
+          socket.emit "#{methodName}#{@methodSeparator}#{requestId}", @evalRouteHandler(routeHandler, params)
           return
       if @verbose then @log "No route found for #{methodName} #{uri}"
 
@@ -94,7 +92,7 @@ module.exports = class RestfulRouter
       false
     else
       params = {}
-      for i in [0..segmentedURI.length-1]
+      for i in [0..segmentedPattern.length-1]
         if segmentedPattern[i] != ""
           if segmentedPattern[i].indexOf(@jsonParameterPrefix) == 0
             pname = segmentedURI[i].substr(@jsonParameterPrefix.length)
