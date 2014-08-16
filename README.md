@@ -151,11 +151,11 @@ function get(API) {
 
 ### Raw Javascript
 
-This method is dangerous. Because socket.io is asynchronous by nature, you can only have several handlers listening on the same event.
+This method is dangerous. Because socket.io is asynchronous by nature, you can have several handlers listening on the same event.
 
-In restful.io, each request is associated with a unique ID. If you use raw Javascript, you will have to handle these identifiers manually.
+In restful.io, each request is associated with a unique ID. If you use raw Javascript, you will have to handle these identifiers manually. 
 
-Remember that if you don't provide any unique ID to socket.emit, other handlers might intercept your request's response too, which may end on unpredictable behaviours.
+Remember that if you don't provide any unique ID to socket.emit, other handlers listening for response might intercept your request's response too, potentially conflicting with yours, which may end on unpredictable behaviours.
 
 ```javascript
 var io = require('socket.io-client');
