@@ -2,7 +2,7 @@ toSource = require 'tosource'
 
 module.exports = class RestfulRouter
 
-  constructor: (@ctx, @routes, @verbose = false, @eventSeparator = ':', @uriSeparator = '/', @parameterPrefix = 'p:', @jsonParameterPrefix = 'j:', @resultSuffix = "RESULT") ->
+  constructor: (@ctx, @routes, @verbose = false, @methodSeparator = ':', @uriSeparator = '/', @parameterPrefix = 'p:', @jsonParameterPrefix = 'j:', @resultSuffix = "RESULT") ->
 
   log: (str) ->
     console.log "[LOG] RestfulRouter: #{str}"
@@ -17,7 +17,7 @@ module.exports = class RestfulRouter
 
 
   # TODO All the following needs some functional refactoring
-  # TODO Change event to method in readme
+  # TODO Change method to method in readme
   bindPublicAPI: () =>
     API = @getPublicAPI(@routes)
     SrcAPI = (API) ->
@@ -43,48 +43,48 @@ module.exports = class RestfulRouter
 
   getPublicAPI: (routes, nestedIn = undefined) =>
     result = {}
-    for event, eventData of routes
-      absEvent = if nestedIn? then "#{nestedIn}#{@eventSeparator}#{event}" else event
+    for method, methodData of routes
+      absmethod = if nestedIn? then "#{nestedIn}#{@methodSeparator}#{method}" else method
       ###
       localResult = result
-      for e in absEvent.split @eventSeparator
+      for e in absmethod.split @methodSeparator
         localResult = localResult[e]
       ###
-      if Array.isArray(eventData)
+      if Array.isArray(methodData)
         # Here, "socket" variable will be provided by context when API will be evaled on client
-        result[event] = eval("""(function() {
+        result[method] = eval("""(function() {
             return function(uri, json) {
               params = (json != undefined) ? {uri: uri, json: json} : uri;
-              socket.emit('#{event}', params);
+              socket.emit('#{method}', params);
             };
           })()""");
-      else if typeof eventData == "object"
-        result[event] = @getPublicAPI(eventData, absEvent)
+      else if typeof methodData == "object"
+        result[method] = @getPublicAPI(methodData, absmethod)
     result
 
 
   bindRoutes: (routes, socket, nestedIn = undefined) =>
-    for event, eventData of routes
-      if Array.isArray(eventData)
-        @bindEvent socket, event, eventData
-      else if typeof eventData == "object"
-        @bindRoutes eventData, socket, if nestedIn? then "#{nestedIn}#{@eventSeparator}#{event}" else event
+    for method, methodData of routes
+      if Array.isArray(methodData)
+        @bindmethod socket, method, methodData
+      else if typeof methodData == "object"
+        @bindRoutes methodData, socket, if nestedIn? then "#{nestedIn}#{@methodSeparator}#{method}" else method
 
-  bindEvent: (socket, eventName, eventData) ->
-    if @verbose then @log "Binding #{eventName}"
-    socket.on eventName, (data) =>
+  bindmethod: (socket, methodName, methodData) ->
+    if @verbose then @log "Binding #{methodName}"
+    socket.on methodName, (data) =>
       uri = if typeof data == "string" then data else data.uri
       json = if typeof data == "string" then {} else data.json
 
-      if @verbose then @log "Received request #{eventName} #{uri}"
-      for route in eventData
+      if @verbose then @log "Received request #{methodName} #{uri}"
+      for route in methodData
         params = @matchURI(uri, json, route.uri)
         if params
           routeHandler = route.to
-          if @verbose then @log "Calling #{routeHandler} for #{eventName} #{uri}"
-          socket.emit "#{eventName}#{@eventSeparator}#{@resultSuffix}", @evalRouteHandler(routeHandler, params)
+          if @verbose then @log "Calling #{routeHandler} for #{methodName} #{uri}"
+          socket.emit "#{methodName}#{@methodSeparator}#{@resultSuffix}", @evalRouteHandler(routeHandler, params)
           return
-      if @verbose then @log "No route found for #{eventName} #{uri}"
+      if @verbose then @log "No route found for #{methodName} #{uri}"
 
   # TODO Needs regexp and / or good parsing method
   matchURI: (uri, jsonParams, pattern) =>

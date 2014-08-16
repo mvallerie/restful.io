@@ -43,7 +43,7 @@ var ControllerScope = {
 };
 
 var router = new RestfulRouter(ControllerScope, {
-  // These are event names, feel free to change or to add
+  // These are method names, feel free to change or to add
   // Here I used GET/PUT/DELETE only to mimic classic RESTful app
   GET: [
     {
@@ -67,10 +67,10 @@ var router = new RestfulRouter(ControllerScope, {
   DELETE: [
     // No route yet
   ],
-  // Nesting events are supported
+  // Nested methods are supported
   FOO: {
     BAR: [
-      // Here, the event will be FOO:BAR (: is the default separator)
+      // Here, the method will be FOO:BAR (: is the default separator)
       // No route yet
     ]
   }
@@ -121,11 +121,11 @@ Here is described the usable parameters when constructing a router :
 | ctx  | JSON | NA | { "FooController": FooController, "BarController": BarController } |
 | routes | JSON | NA | Main JSON config. See snippet before |
 | verbose | boolean | false | If true, much more log will appear |
-| eventSeparator | character | ':' | Used for nested events. |
+| methodSeparator | character | ':' | Used for nested methods. |
 | uriSeparator | character | '/' | Used to parse URIs. |
 | parameterPrefix | string | "p:" | Used to identify primitive parameter. |
 | jsonParameterPrefix | string | "j:" | Used to identify complex JSON parameter. |
-| resultSuffix | string | "RESULT" | Used to return a nested event (GET:RESULT, POST:RESULT, ...) |
+| resultSuffix | string | "RESULT" | Used to return a nested method (GET:RESULT, POST:RESULT, ...) |
 
 When you start the router, as a second parameter, you may use a callback to handle user connection :
 
