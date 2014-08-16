@@ -149,7 +149,7 @@ function get(API) {
 }
 ```
 
-### Raw Javascript
+### Raw Javascript (with socket.io-client)
 
 This method is dangerous. Because socket.io is asynchronous by nature, you can have several handlers listening on the same event.
 
@@ -158,8 +158,6 @@ In restful.io, each request is associated with a unique ID. If you use raw Javas
 Remember that if you don't provide any unique ID to socket.emit, other handlers listening for response might intercept your request's response too, potentially conflicting with yours, which may end on unpredictable behaviours.
 
 ```javascript
-var io = require('socket.io-client');
-
 var socket = io('http://localhost:8080');
 socket.on('connect', function() {
   // For primitive parameters, you can pass it directly in the URI
