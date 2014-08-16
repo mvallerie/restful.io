@@ -180,11 +180,11 @@
 <h3>
 <a name="raw-javascript" class="anchor" href="#raw-javascript"><span class="octicon octicon-link"></span></a>Raw Javascript</h3>
 
-<p>This method is dangerous. Because socket.io is asynchronous by nature, you can only have several handlers listening on the same event.</p>
+<p>This method is dangerous. Because socket.io is asynchronous by nature, you can have several handlers listening on the same event.</p>
 
-<p>In restful.io, each request is associated with a unique ID. If you use raw Javascript, you will have to handle these identifiers manually.</p>
+<p>In restful.io, each request is associated with a unique ID. If you use raw Javascript, you will have to handle these identifiers manually. </p>
 
-<p>Remember that if you don't provide any unique ID to socket.emit, other handlers might intercept your request's response too, which may end on unpredictable behaviours.</p>
+<p>Remember that if you don't provide any unique ID to socket.emit, other handlers listening for response might intercept your request's response too, potentially conflicting with yours, which may end on unpredictable behaviours.</p>
 
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">io</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'socket.io-client'</span><span class="p">);</span>
 
