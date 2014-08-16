@@ -3,7 +3,8 @@
   "version": "0.0.3",
   "dependencies": {
     "coffee-script": "~1.7",
-    "markdown": "~0.4"
+    "markdown": "~0.4",
+    "tosource": "^0.1.2"
   },
   "description": "Restful-like routing module for NodeJS and socket.io",
   "main": "index.js",
