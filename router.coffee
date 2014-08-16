@@ -1,3 +1,5 @@
+toSource = require 'tosource'
+
 module.exports = class RestfulRouter
 
   constructor: (@ctx, @routes, @verbose = false, @eventSeparator = ':', @uriSeparator = '/', @parameterPrefix = 'p:', @jsonParameterPrefix = 'j:', @resultSuffix = "RESULT") ->
@@ -5,8 +7,9 @@ module.exports = class RestfulRouter
   log: (str) ->
     console.log "[LOG] RestfulRouter: #{str}"
 
-  start: (io, beforeRouting = undefined) =>
+  start: (io, publicAPI = false, beforeRouting = undefined) =>
     @log "Router started"
+    if publicAPI then @bindPublicAPI()
     io.on "connection", (socket) =>
       beforeRouting?(socket)
       if @verbose then @log "New client connected"
@@ -14,6 +17,51 @@ module.exports = class RestfulRouter
 
 
   # TODO All the following needs some functional refactoring
+  # TODO Change event to method in readme
+  bindPublicAPI: () =>
+    API = @getPublicAPI(@routes)
+    SrcAPI = (API) ->
+      """(function() {
+        return function(socket) {
+          var API = #{toSource(API)};
+          API.socket = socket;
+          return API;
+        };
+      })()"""
+
+    if @ctx["APIController"]?
+      customGet = @ctx["APIController"].get
+      @ctx["APIController"].get = () -> SrcAPI(if customGet? then customGet(API) else API)
+    else
+      @ctx["APIController"] = {
+        get: () -> SrcAPI(API)
+      }
+
+    route = {uri: "/api", to: "APIController.get()"}
+    if !@routes.GET? then @routes.GET = [route] else @routes.GET.push(route)
+
+
+  getPublicAPI: (routes, nestedIn = undefined) =>
+    result = {}
+    for event, eventData of routes
+      absEvent = if nestedIn? then "#{nestedIn}#{@eventSeparator}#{event}" else event
+      ###
+      localResult = result
+      for e in absEvent.split @eventSeparator
+        localResult = localResult[e]
+      ###
+      if Array.isArray(eventData)
+        # Here, "socket" variable will be provided by context when API will be evaled on client
+        result[event] = eval("""(function() {
+            return function(uri, json) {
+              params = (json != undefined) ? {uri: uri, json: json} : uri;
+              socket.emit('#{event}', params);
+            };
+          })()""");
+      else if typeof eventData == "object"
+        result[event] = @getPublicAPI(eventData, absEvent)
+    result
+
 
   bindRoutes: (routes, socket, nestedIn = undefined) =>
     for event, eventData of routes
@@ -57,6 +105,9 @@ module.exports = class RestfulRouter
             # Explicit return breaks the function
             return false
       params
+
+  getMethodName: (routeHandler) ->
+
 
   # TODO REALLY needs REGEXP...quick and dirty work
   evalRouteHandler: (routeHandler, params) ->
