@@ -178,7 +178,7 @@
 </pre></div>
 
 <h3>
-<a name="raw-javascript" class="anchor" href="#raw-javascript"><span class="octicon octicon-link"></span></a>Raw Javascript</h3>
+<a name="raw-javascript-with-socketio-client" class="anchor" href="#raw-javascript-with-socketio-client"><span class="octicon octicon-link"></span></a>Raw Javascript (with socket.io-client)</h3>
 
 <p>This method is dangerous. Because socket.io is asynchronous by nature, you can have several handlers listening on the same event.</p>
 
@@ -186,9 +186,7 @@
 
 <p>Remember that if you don't provide any unique ID to socket.emit, other handlers listening for response might intercept your request's response too, potentially conflicting with yours, which may end on unpredictable behaviours.</p>
 
-<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">io</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'socket.io-client'</span><span class="p">);</span>
-
-<span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">(</span><span class="s1">'http://localhost:8080'</span><span class="p">);</span>
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">(</span><span class="s1">'http://localhost:8080'</span><span class="p">);</span>
 <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
   <span class="c1">// For primitive parameters, you can pass it directly in the URI</span>
   <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'GET'</span><span class="p">,</span> <span class="s1">'/foo/4'</span><span class="p">);</span>
