@@ -27,13 +27,15 @@ var io = require("socket.io")(http);
 var RestfulRouter = require("restful.io");
 
 var FooController = {
-  bar: function(param) {
+  // Because Node is asynchronous, is more convenient to use an async pattern, and not return directly a result.
+  // result is a callback (you can obviously change the name), you can omit it if your route does not return anything
+  bar: function(param, result) {
     console.log("FooController.bar("+param+");");
-    return "OK";
+    result("OK");
   },
+  // Your route does not return anything, omit result callback
   barJson: function(jsonParam) {
     console.log("FooController.barJson("+JSON.stringify(jsonParam)+");");
-    return "OK";
   }
 };
 
@@ -51,6 +53,12 @@ var router = new RestfulRouter(ControllerScope, {
       // Parameter names are bound between uri and route handler
       uri: "/foo/p:param",
       to: "FooController.bar(param)"
+    },
+    // CAREFUL !! Route order matters.
+    // The following route will never get matched because 'useless' will be treated as 'param' for first route
+    {
+      uri: "/foo/useless",
+      to: "FooController.neverCalled()"
     }
     // You can add as many more routes as you wish
   ],
@@ -153,7 +161,7 @@ function get(API) {
 
 This method is dangerous. Because socket.io is asynchronous by nature, you can have several handlers listening on the same event.
 
-In restful.io, each request is associated with a unique ID. If you use raw Javascript, you will have to handle these identifiers manually. 
+In restful.io, each request is associated with a unique ID. If you use raw Javascript, you will have to handle these identifiers manually.
 
 Remember that if you don't provide any unique ID to socket.emit, other handlers listening for response might intercept your request's response too, potentially conflicting with yours, which may end on unpredictable behaviours.
 
