@@ -59,13 +59,15 @@
 <span class="kd">var</span> <span class="nx">RestfulRouter</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"restful.io"</span><span class="p">);</span>
 
 <span class="kd">var</span> <span class="nx">FooController</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="nx">bar</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">param</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// Because Node is asynchronous, is more convenient to use an async pattern, and not return directly a result.</span>
+  <span class="c1">// result is a callback (you can obviously change the name), you can omit it if your route does not return anything</span>
+  <span class="nx">bar</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">param</span><span class="p">,</span> <span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
     <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"FooController.bar("</span><span class="o">+</span><span class="nx">param</span><span class="o">+</span><span class="s2">");"</span><span class="p">);</span>
-    <span class="k">return</span> <span class="s2">"OK"</span><span class="p">;</span>
+    <span class="nx">result</span><span class="p">(</span><span class="s2">"OK"</span><span class="p">);</span>
   <span class="p">},</span>
+  <span class="c1">// Your route does not return anything, omit result callback</span>
   <span class="nx">barJson</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">jsonParam</span><span class="p">)</span> <span class="p">{</span>
     <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"FooController.barJson("</span><span class="o">+</span><span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">jsonParam</span><span class="p">)</span><span class="o">+</span><span class="s2">");"</span><span class="p">);</span>
-    <span class="k">return</span> <span class="s2">"OK"</span><span class="p">;</span>
   <span class="p">}</span>
 <span class="p">};</span>
 
@@ -83,6 +85,12 @@
       <span class="c1">// Parameter names are bound between uri and route handler</span>
       <span class="nx">uri</span><span class="o">:</span> <span class="s2">"/foo/p:param"</span><span class="p">,</span>
       <span class="nx">to</span><span class="o">:</span> <span class="s2">"FooController.bar(param)"</span>
+    <span class="p">},</span>
+    <span class="c1">// CAREFUL !! Route order matters.</span>
+    <span class="c1">// The following route will never get matched because 'useless' will be treated as 'param' for first route</span>
+    <span class="p">{</span>
+      <span class="nx">uri</span><span class="o">:</span> <span class="s2">"/foo/useless"</span><span class="p">,</span>
+      <span class="nx">to</span><span class="o">:</span> <span class="s2">"FooController.neverCalled()"</span>
     <span class="p">}</span>
     <span class="c1">// You can add as many more routes as you wish</span>
   <span class="p">],</span>
@@ -182,7 +190,7 @@
 
 <p>This method is dangerous. Because socket.io is asynchronous by nature, you can have several handlers listening on the same event.</p>
 
-<p>In restful.io, each request is associated with a unique ID. If you use raw Javascript, you will have to handle these identifiers manually. </p>
+<p>In restful.io, each request is associated with a unique ID. If you use raw Javascript, you will have to handle these identifiers manually.</p>
 
 <p>Remember that if you don't provide any unique ID to socket.emit, other handlers listening for response might intercept your request's response too, potentially conflicting with yours, which may end on unpredictable behaviours.</p>
 
