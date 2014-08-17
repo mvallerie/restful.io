@@ -31,10 +31,11 @@ module.exports = class RestfulRouter
 
     if @ctx["APIController"]?
       customGet = @ctx["APIController"].get
-      @ctx["APIController"].get = () -> SrcAPI(if customGet? then customGet(API) else API)
+      @ctx["APIController"].get = (result) ->
+        result(SrcAPI(if customGet? then customGet(API) else API))
     else
       @ctx["APIController"] = {
-        get: () -> SrcAPI(API)
+        get: (result) -> result(SrcAPI(API))
       }
 
     route = {uri: "/api", to: "APIController.get()"}
@@ -51,7 +52,7 @@ module.exports = class RestfulRouter
             return function(uri, json, callback) {
               this.requestId = this.requestId + 1;
               params = {requestId: this.requestId, uri: uri, json: json};
-              socket.on('#{absmethod}:'+this.requestId, callback);
+              if(callback != undefined) socket.on('#{absmethod}:'+this.requestId, callback);
               socket.emit('#{absmethod}', params);
             };
           })()""");
@@ -80,7 +81,8 @@ module.exports = class RestfulRouter
           routeHandler = route.to
           if @verbose then @log "Calling #{routeHandler} for #{methodName} #{uri}"
           requestId = if data.requestId? then data.requestId else @resultSuffix
-          socket.emit "#{methodName}#{@methodSeparator}#{requestId}", @evalRouteHandler(routeHandler, params)
+          @evalRouteHandler routeHandler, params, (result) =>
+            socket.emit "#{methodName}#{@methodSeparator}#{requestId}", result
           return
       if @verbose then @log "No route found for #{methodName} #{uri}"
 
@@ -104,11 +106,9 @@ module.exports = class RestfulRouter
             return false
       params
 
-  getMethodName: (routeHandler) ->
-
 
   # TODO REALLY needs REGEXP...quick and dirty work
-  evalRouteHandler: (routeHandler, params) ->
+  evalRouteHandler: (routeHandler, params, result) ->
     startCS = routeHandler.indexOf('.')
     endCS = routeHandler.indexOf('(')
     endArgs = routeHandler.lastIndexOf(')')
@@ -121,8 +121,10 @@ module.exports = class RestfulRouter
     for call in callstack.split('.')
       handlerMethod = handlerMethod?[call]
 
-    paramStack = [];
-    for arg in args.split(',')
-      paramStack.push(params[arg])
+    paramStack = []
+    if args != ""
+      for arg in args.split(',')
+        paramStack.push(params[arg])
+    paramStack.push(result)
 
     handlerMethod?.apply(handlerMethod, paramStack)
