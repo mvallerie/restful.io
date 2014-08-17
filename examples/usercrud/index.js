@@ -11,13 +11,13 @@ var UserId = 0;
 var UserStore = [];
 
 var UserController = {
-  get: function(id) {
+  get: function(id, result) {
     log("UserController received request GET for " + id);
-    return _.filter(UserStore, function(e) {
+    result(_.filter(UserStore, function(e) {
       return e.id == id;
-    })[0];
+    })[0]);
   },
-  put: function(data) {
+  put: function(data, result) {
     var user = data;
     if(user.id !== undefined) {
       log("UserController received request PUT for " + user.name + " (" + user.id + ")");
@@ -34,13 +34,13 @@ var UserController = {
       UserStore.push(user);
       UserId = UserId + 1;
     }
-    return user;
+    return result(user);
   },
-  delete: function(id) {
+  delete: function(id, result) {
     log("UserController received request DELETE for " + id);
     var before = UserStore.length;
     UserStore = _.filter(UserStore, function(e) { return e.id != id; });
-    return {deleted: before - UserStore.length};
+    return result({deleted: before - UserStore.length});
   }
 };
 

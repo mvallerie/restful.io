@@ -8,9 +8,14 @@ var log = function(str) {
 
 
 var UserController = {
-  get: function(id) {
+  // result is a callback, you can omit it if your route does not return anything
+  get: function(id, result) {
     log("UserController received request GET for " + id);
-    return id;
+    result({id: id, name: "John Smith", age: 42});
+  },
+  // omit result param so this route can not return anything
+  useless: function() {
+    log("UserController received request GET for useless method");
   }
 };
 
@@ -22,6 +27,10 @@ var ControllerScope = {
 
 var router = new RestfulRouter(ControllerScope, {
   GET: [
+    {
+      uri: "/user/useless",
+      to: "UserController.useless()"
+    },
     {
       uri: "/user/p:id",
       to: "UserController.get(id)"
