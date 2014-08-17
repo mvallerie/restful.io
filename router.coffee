@@ -124,7 +124,7 @@ module.exports = class RestfulRouter
     paramStack = []
     if args != ""
       for arg in args.split(',')
-        paramStack.push(params[arg])
+        paramStack.push(params[arg.trim()])
     paramStack.push(result)
 
     handlerMethod?.apply(handlerMethod, paramStack)
