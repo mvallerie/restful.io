@@ -11,13 +11,13 @@ var UserId = 0;
 var UserStore = [];
 
 var UserController = {
-  get: function(id, result) {
+  get: function(id, andThen) {
     log("UserController received request GET for " + id);
-    result(_.filter(UserStore, function(e) {
+    andThen(_.filter(UserStore, function(e) {
       return e.id == id;
     })[0]);
   },
-  put: function(data, result) {
+  put: function(data, andThen) {
     var user = data;
     if(user.id !== undefined) {
       log("UserController received request PUT for " + user.name + " (" + user.id + ")");
@@ -34,7 +34,7 @@ var UserController = {
       UserStore.push(user);
       UserId = UserId + 1;
     }
-    return result(user);
+    andThen(user);
   },
   delete: function(id, result) {
     log("UserController received request DELETE for " + id);

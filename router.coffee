@@ -31,15 +31,16 @@ module.exports = class RestfulRouter
 
     if @ctx["APIController"]?
       customGet = @ctx["APIController"].get
-      @ctx["APIController"].get = (result) ->
-        result(SrcAPI(if customGet? then customGet(API) else API))
+      @ctx["APIController"].get = (andThen) ->
+        andThen(SrcAPI(if customGet? then customGet(API) else API))
     else
       @ctx["APIController"] = {
-        get: (result) -> result(SrcAPI(API))
+        get: (andThen) -> andThen(SrcAPI(API))
       }
 
-    route = {uri: "/api", to: "APIController.get()"}
-    if !@routes.GET? then @routes.GET = [route] else @routes.GET.push(route)
+    apiRoute = {uri: "/api", to: "APIController.get()"}
+    #authRoute = {uri: "/api/auth/j:username/j:passwordhash", to: "APIController.auth()"}
+    if !@routes.GET? then @routes.GET = [apiRoute] else @routes.GET.push(apiRoute)
 
 
   getPublicAPI: (routes, nestedIn = undefined) =>
@@ -47,6 +48,7 @@ module.exports = class RestfulRouter
     for method, methodData of routes
       absmethod = if nestedIn? then "#{nestedIn}#{@methodSeparator}#{method}" else method
       if Array.isArray(methodData)
+        # TODO Templating ?
         # Here, "socket" variable will be provided by context when API will be evaled on client
         result[method] = eval("""(function() {
             return function(uri, json, callback) {

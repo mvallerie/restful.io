@@ -9,9 +9,9 @@ var log = function(str) {
 
 var UserController = {
   // result is a callback, you can omit it if your route does not return anything
-  get: function(id, result) {
+  get: function(id, andThen) {
     log("UserController received request GET for " + id);
-    result({id: id, name: "John Smith", age: 42});
+    andThen({id: id, name: "John Smith", age: 42});
   },
   // omit result param so this route can not return anything
   useless: function() {
