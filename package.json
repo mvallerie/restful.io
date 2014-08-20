@@ -1,10 +1,11 @@
 {
   "name": "restful.io",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "dependencies": {
     "coffee-script": "~1.7",
     "markdown": "~0.4",
-    "tosource": "^0.1.2"
+    "tosource": "^0.1.2",
+    "underscore": "^1.6.0"
   },
   "description": "Restful-like routing module for NodeJS and socket.io",
   "main": "index.js",
