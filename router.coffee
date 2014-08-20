@@ -1,5 +1,11 @@
 toSource = require 'tosource'
 
+Route = require './route'
+handlers =
+  TokenAuthHandler: require './auth/TokenAuthHandler'
+  UserGroupAuthHandler: require './auth/UserGroupAuthHandler'
+
+
 module.exports = class RestfulRouter
 
   constructor: (@ctx, @routes, @verbose = false, @methodSeparator = ':', @uriSeparator = '/', @parameterPrefix = 'p:', @jsonParameterPrefix = 'j:', @resultSuffix = 'RESULT') ->
@@ -9,10 +15,16 @@ module.exports = class RestfulRouter
 
   start: (io, publicAPI = false, beforeRouting = undefined) =>
     @log "Router started"
-    if publicAPI then @bindPublicAPI()
+
+    if publicAPI != false
+      if typeof publicAPI == "object" then @authHandler = publicAPI
+      else @authHandler = new handlers.TokenAuthHandler()
+      @authHandler.handleRoutes(@routes)
+      @bindPublicAPI()
+
     io.on "connection", (socket) =>
       beforeRouting?(socket)
-      if @verbose then @log "New client connected"
+      @log "New client connected"
       @bindRoutes(@routes, socket)
 
 
@@ -21,45 +33,100 @@ module.exports = class RestfulRouter
     API = @getPublicAPI(@routes)
     SrcAPI = (API) ->
       """(function() {
-        return function(socket) {
+        return function(socket, verbose) {
           var API = #{toSource(API)};
           API.socket = socket;
-          API.requestId = 0;
+          API.token = "";
+          API.verbose = (verbose === true);
+          API.log = function(str) {
+            if(API.verbose) {
+              console.log("[API] " + str);
+            }
+          };
           return API;
         };
       })()"""
 
+
+    if !@routes.GET? then @routes.GET = []
+
+    defaultLoginImpl = (authHandler) -> (route, authData) ->
+      authHandler.login route, authData
+
+    defaultLogoutImpl = (authHandler) -> (route) ->
+      authHandler.logout route
+
+
     if @ctx["APIController"]?
-      customGet = @ctx["APIController"].get
-      @ctx["APIController"].get = (andThen) ->
-        andThen(SrcAPI(if customGet? then customGet(API) else API))
+      getHook = @ctx["APIController"].get
+      @ctx["APIController"].get = (route) ->
+        route.OK(SrcAPI(if getHook? then getHook(API) else API))
+
+      # TODO disable auth hooks for now. Need to think about it.
+      if @authHandler?
+        #loginHook = @ctx["APIController"].login
+        #if not loginHook?
+          @ctx["APIController"].login = defaultLoginImpl(@authHandler)
+        #else
+        #  @ctx["APIController"].login = (route, authdata) =>
+        #    loginHook(route, authdata, @authHandler)
+
+
+        #logoutHook = @ctx["APIController"].logout
+        #if not logoutHook?
+          @ctx["APIController"].logout = defaultLogoutImpl(@authHandler)
+        #else
+        #  @ctx["APIController"].logout = (route) =>
+        #    logoutHook(route, @authHandler)
     else
       @ctx["APIController"] = {
-        get: (andThen) -> andThen(SrcAPI(API))
+        get: (route) -> route.OK(SrcAPI(API))
+
+        login: (if @authHandler? then defaultLoginImpl(@authHandler) else undefined)
+
+        logout: (if @authHandler? then defaultLogoutImpl(@authHandler) else undefined)
       }
 
-    apiRoute = {uri: "/api", to: "APIController.get()"}
-    #authRoute = {uri: "/api/auth/j:username/j:passwordhash", to: "APIController.auth()"}
-    if !@routes.GET? then @routes.GET = [apiRoute] else @routes.GET.push(apiRoute)
+    apiRoute = {uri: "/api", to: "APIController.get()", public: true}
+    @routes.GET.push(apiRoute)
+
+    if @authHandler?
+      loginRoute = {uri: "/api/login", to: "APIController.login(j:auth)", public: true}
+      logoutRoute = {uri: "/api/logout", to: "APIController.logout()"}
+      @routes.GET.push(loginRoute, logoutRoute)
 
 
   getPublicAPI: (routes, nestedIn = undefined) =>
-    result = {}
+    result = {requestId: 0}
+
     for method, methodData of routes
       absmethod = if nestedIn? then "#{nestedIn}#{@methodSeparator}#{method}" else method
       if Array.isArray(methodData)
         # TODO Templating ?
-        # Here, "socket" variable will be provided by context when API will be evaled on client
+        # Here, "socket" and "requestId" variables will be provided by context when API will be evaled on client
         result[method] = eval("""(function() {
             return function(uri, json, callback) {
               this.requestId = this.requestId + 1;
-              params = {requestId: this.requestId, uri: uri, json: json};
-              if(callback != undefined) socket.on('#{absmethod}:'+this.requestId, callback);
+              var params = {
+                requestId: this.requestId, uri: uri, json: json #{if @authHandler? then ", token: API.token"}
+              };
+
+              if(callback != undefined) API.socket.on('#{absmethod}:'+this.requestId, function(data) {
+                API.log('Response from ' + uri + ' : ');
+                API.log(JSON.stringify(data));
+                callback(data);
+              })
+
+              API.log('Sending #{absmethod} on ' + uri + ' with params:');
+              API.log(JSON.stringify(params));
               socket.emit('#{absmethod}', params);
             };
           })()""");
       else if typeof methodData == "object"
         result[method] = @getPublicAPI(methodData, absmethod)
+
+    result.requestId = 0
+
     result
 
 
@@ -71,25 +138,37 @@ module.exports = class RestfulRouter
         @bindRoutes methodData, socket, if nestedIn? then "#{nestedIn}#{@methodSeparator}#{method}" else method
 
   bindMethod: (socket, methodName, methodData) ->
-    if @verbose then @log "Binding #{methodName}"
+    @log "Binding #{methodName}"
     socket.on methodName, (data) =>
       uri = if typeof data == "string" then data else data.uri
       json = if typeof data == "string" then {} else data.json
 
-      if @verbose then @log "Received request #{methodName} #{uri}"
+      @log "Received request #{methodName} #{uri}"
       for route in methodData
-        params = @matchURI(uri, json, route.uri)
-        if params
+        params = @matchURI(uri, route.uri)
+        if params != false
           routeHandler = route.to
-          if @verbose then @log "Calling #{routeHandler} for #{methodName} #{uri}"
           requestId = if data.requestId? then data.requestId else @resultSuffix
-          @evalRouteHandler routeHandler, params, (result) =>
+
+          r = new Route(@ctx, methodName, route.uri, routeHandler, params, json, @jsonParameterPrefix, (result) =>
             socket.emit "#{methodName}#{@methodSeparator}#{requestId}", result
+          , @verbose)
+          if @authHandler?
+            if data.token? && data.token != "" then r.token = data.token
+            if route.public != true
+              @authHandler.handleRequest r, params
+            else
+              r.follow()
+          else
+            r.follow()
+
           return
-      if @verbose then @log "No route found for #{methodName} #{uri}"
+
+
+      @log "No route found for #{methodName} #{uri}"
 
   # TODO Needs regexp and / or good parsing method
-  matchURI: (uri, jsonParams, pattern) =>
+  matchURI: (uri, pattern) =>
     segmentedURI = uri.split(@uriSeparator)
     segmentedPattern = pattern.split(@uriSeparator)
     if segmentedURI.length != segmentedPattern.length
@@ -98,35 +177,9 @@ module.exports = class RestfulRouter
       params = {}
       for i in [0..segmentedPattern.length-1]
         if segmentedPattern[i] != ""
-          if segmentedPattern[i].indexOf(@jsonParameterPrefix) == 0
-            pname = segmentedURI[i].substr(@jsonParameterPrefix.length)
-            params[segmentedPattern[i].substr(@jsonParameterPrefix.length)] = jsonParams[pname]
-          else if segmentedPattern[i].indexOf(@parameterPrefix) == 0
+          if segmentedPattern[i].indexOf(@parameterPrefix) == 0
             params[segmentedPattern[i].substr(@parameterPrefix.length)] = segmentedURI[i]
           else if segmentedPattern[i] != segmentedURI[i]
             # Explicit return breaks the function
             return false
       params
-
-
-  # TODO REALLY needs REGEXP...quick and dirty work
-  evalRouteHandler: (routeHandler, params, result) ->
-    startCS = routeHandler.indexOf('.')
-    endCS = routeHandler.indexOf('(')
-    endArgs = routeHandler.lastIndexOf(')')
-
-    handlerObj = @ctx[routeHandler.substr(0, startCS)]
-    callstack = routeHandler.substr(startCS+1, endCS-startCS-1)
-    args = routeHandler.substr(endCS+1, endArgs-(endCS+1))
-    handlerMethod = handlerObj
-
-    for call in callstack.split('.')
-      handlerMethod = handlerMethod?[call]
-
-    paramStack = []
-    if args != ""
-      for arg in args.split(',')
-        paramStack.push(params[arg.trim()])
-    paramStack.push(result)
-
-    handlerMethod?.apply(handlerMethod, paramStack)
