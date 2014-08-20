@@ -27,15 +27,16 @@ var io = require("socket.io")(http);
 var RestfulRouter = require("restful.io");
 
 var FooController = {
-  // Because Node is asynchronous, is more convenient to use an async pattern, and not return directly a result.
-  // andThen is a callback (you can obviously change the name), you can omit it if your route does not return anything
-  bar: function(param, andThen) {
+  // each method of your controllers has to take the route as first parameter
+  bar: function(route, param) {
     console.log("FooController.bar("+param+");");
-    andThen("OK");
+    // Here we route the request
+    route.OK("OK");
   },
   // Your route does not return anything, omit result callback
-  barJson: function(jsonParam) {
+  barJson: function(route, jsonParam) {
     console.log("FooController.barJson("+JSON.stringify(jsonParam)+");");
+    // You don't call any of the route's methods so no response
   }
 };
 
@@ -65,8 +66,9 @@ var router = new RestfulRouter(ControllerScope, {
   PUT: [
     {
       // j:varname indicates a JSON object parameter
-      uri: "/foo/j:param",
-      to: "FooController.barJson(param)"
+      // That means that the client have to send something which looks like => {user: {/* data */}}
+      uri: "/foo",
+      to: "FooController.barJson(j:user)"
     }
   ],
   POST: [
@@ -89,6 +91,18 @@ router.start(io);
 http.listen(8080);
 ```
 
+### Route object methods and attrs
+
+By convention, upper case identifiers end the route and send back something to client.
+Lowercase identifiers does not end the route.
+
+| Name | Parameters | Effect | Example |
+| ---- | ---- | -------- | ------  |
+| OK  | data: * | Sends back data to the client with a 200 result | route.OK({message: "done"}) |
+| FORBIDDEN | err: String | Sends back data to the client with a 403 result | route.FORBIDDEN("Error !!") |
+| follow | NA | If the route is not yet processed, "follow" sends the request to its routeHandler. This is useful with AuthHandlers | route.follow() |
+| token | NA | If you are authentified, you can access the token. | route.token |
+
 ## Client-side
 
 You have two ways to deal with the client side.
@@ -99,6 +113,43 @@ This is the preferred way. The second parameter of start method is a boolean. Se
 
 ```javascript
 router.start(io, true);
+```
+
+#### Authentication note
+
+By default, when client API is exposed, every request has to be authenticated.
+Default authentication handler is bound on uri /api/login and is very permissive : no credentials needed.
+
+But actually this boolean parameter can be set to any valid AuthHandler. A valid AuthHandler looks like a controller designed for authentication purposes :
+
+```javascript
+router.start(io, {
+  // Warning : Pseudocode below :)
+
+  handleRoutes: function(routes) -> nothing
+
+  handleRequest: function(route, data) -> nothing (you have to call one of the route methods)
+
+  login: function(route, data) -> nothing (you have to call one of the route methods)
+
+  logout: function(route) -> nothing (you have to call one of the route methods)
+});
+```
+
+If you need to know more about that, please read auth/TokenAuthHandler.coffee
+
+In case you need public API without any kind of authentication, just put a "public" attribute to true for each route you want to expose :
+
+```javascript
+routes = {
+  GET: [
+    {
+      uri: "/iam/public",
+      to: "IamController.public()",
+      public: true
+    }
+  ]
+}
 ```
 
 Now on the client side, you can make a GET on /api to retrieve the code :
@@ -112,19 +163,35 @@ socket.on('connect', function() {
     // You get JS code to eval
     var API = eval(apiSrc)(socket);
 
-    // Get foo 1
-    API.GET("/foo/1", {}, function(data) {
-      console.log("Result GET : " + data);
+    // If you don't use authentication, skip this call
+    API.GET("/api/login", {}, function(result) {
+      // You HAVE to do the following.
+      API.token = r.data;
+      // Now forget about the authentication.......
+
+      console.log("Now logged in");
+      // Get foo 1
+      API.GET("/foo/1", {}, function(result) {
+        console.log("Result GET : " + JSON.stringify(result));
+
+        API.PUT("/foo", {
+          user: {
+            name: "John Smith",
+            age: 42
+          }
+        }, function(result) {
+          console.log("Result PUT : " + JSON.stringify(result));
+
+          // ...........until now :)
+          API.GET("/api/logout", {}, function(result) {
+            console.log("Now logged off");
+          });
+        });
+
+      });
+
     });
 
-    API.PUT("/foo/j:user", {
-      user: {
-        name: "John Smith",
-        age: 42
-      }
-    }, function(user) {
-      console.log("Result PUT : " + user);
-    });
   });
 
   // Asking for API
@@ -158,6 +225,7 @@ function get(API) {
 }
 ```
 
+
 ### Raw Javascript (with socket.io-client)
 
 This method is dangerous. Because socket.io is asynchronous by nature, you can have several handlers listening on the same event.
@@ -169,19 +237,21 @@ Remember that if you don't provide any unique ID to socket.emit, other handlers 
 ```javascript
 var socket = io('http://localhost:8080');
 socket.on('connect', function() {
-  // For primitive parameters, you can pass it directly in the URI
+  // For simple parameters, you can pass it directly in the URI
   socket.emit('GET', '/foo/4');
 
   socket.on('GET:RESULT', function(data) {
     console.log("Result GET : " + data);
   });
 
-  // For complex JSON parameter, you have to send a plain JSON object corresponding the format below
+  // For complex parameters, you have to send a plain JSON object corresponding the format below
   // The name of your parameter is used to retrieve the value
   socket.emit('PUT', {
     // Here we provide a requestId
     requestId: 'REQUEST_1'
-    uri: '/foo/j:user',
+    // If the request is authenticated, put this param too
+    token: 'foo',
+    uri: '/foo',
     json: {
       user: {
         name: "John Smith",
@@ -204,13 +274,13 @@ Here is described the usable parameters when constructing a router :
 
 | Name | Type | Defaults | Example |
 | ---- | ---- | -------- | ------  |
-| ctx  | JSON | NA | { "FooController": FooController, "BarController": BarController } |
-| routes | JSON | NA | Main JSON config. See snippet before |
+| ctx  | JSON Object | NA | { "FooController": FooController, "BarController": BarController } |
+| routes | JSON Object | NA | Main JSON config. See snippet before |
 | verbose | boolean | false | If true, much more log will appear |
 | methodSeparator | character | ':' | Used for nested methods. |
 | uriSeparator | character | '/' | Used to parse URIs. |
-| parameterPrefix | string | "p:" | Used to identify primitive parameter. |
-| jsonParameterPrefix | string | "j:" | Used to identify complex JSON parameter. |
+| parameterPrefix | string | "p:" | Used to identify primitive parameter in route URI. |
+| jsonParameterPrefix | string | "j:" | Used to identify complex JSON parameter in route handler call. |
 | resultSuffix | string | "RESULT" | Default requestId fired to client if requestId not provided (GET:RESULT, POST:RESULT, ...) |
 
 When you start the router, as a third parameter, you may use a callback to handle user connection :
@@ -231,8 +301,8 @@ restful.io is currently under heavy development. I'm building this project for m
 - socket.io only
 
 #### Currently working on
+- Authentication
 - Known limitations
-- Better parameters model
 - File support
 - Get rid of the context object
 
