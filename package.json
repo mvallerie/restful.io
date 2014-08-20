@@ -1,6 +1,6 @@
 {
   "name": "restful.io",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "dependencies": {
     "coffee-script": "~1.7",
     "markdown": "~0.4",
