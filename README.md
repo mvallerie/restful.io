@@ -301,7 +301,7 @@ restful.io is currently under heavy development. I'm building this project for m
 - socket.io only
 
 #### Currently working on
-- Authentication
+- Better authentication support
 - Known limitations
 - File support
 - Get rid of the context object
