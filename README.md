@@ -99,7 +99,9 @@ Lowercase identifiers does not end the route.
 | Name | Parameters | Effect | Example |
 | ---- | ---- | -------- | ------  |
 | OK  | data: * | Sends back data to the client with a 200 result | route.OK({message: "done"}) |
-| FORBIDDEN | err: String | Sends back data to the client with a 403 result | route.FORBIDDEN("Error !!") |
+| FORBIDDEN | err: * | Sends back err to the client with a 403 result | route.FORBIDDEN("Error !!") |
+| ISE | err: * | Sends back err to the client with a 500 result | route.ISE("Error !!") |
+| NOT_FOUND | err: * | Sends back err to the client with a 404 result | route.NOT_FOUND("Error !!") | 
 | follow | NA | If the route is not yet processed, "follow" sends the request to its routeHandler. This is useful with AuthHandlers | route.follow() |
 | token | NA | If you are authentified, you can access the token. | route.token |
 
