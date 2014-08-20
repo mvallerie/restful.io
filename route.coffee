@@ -1,8 +1,8 @@
 module.exports = class RestfulRoute
   constructor: (@ctx, @method, @uri, @routeHandler, @params, @jsonParams, @jsonParameterPrefix, @endCallback, @verbose = false) ->
 
-  log: (str) ->
-    if @verbose then console.log "[LOG] RestfulRoute #{@method} #{uri} : #{str}"
+  log: (str) =>
+    if @verbose then console.log "[LOG] RestfulRoute #{@method} #{@uri} : #{str}"
 
   OK: (data = {}) =>
     @endCallback {status: 200, data: data}
