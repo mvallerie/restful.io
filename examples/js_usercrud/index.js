@@ -36,11 +36,11 @@ var UserController = {
     }
     andThen(user);
   },
-  delete: function(id, result) {
+  delete: function(id, andThen) {
     log("UserController received request DELETE for " + id);
     var before = UserStore.length;
     UserStore = _.filter(UserStore, function(e) { return e.id != id; });
-    return result({deleted: before - UserStore.length});
+    return andThen({deleted: before - UserStore.length});
   }
 };
 
@@ -63,8 +63,8 @@ var router = new RestfulRouter(ControllerScope, {
   ],
   PUT: [
     {
-      uri: "/user/j:data",
-      to: "UserController.put(data)"
+      uri: "/user",
+      to: "UserController.put(j:userdata)"
     }
   ],
   DELETE: [

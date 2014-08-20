@@ -2,8 +2,8 @@ var io = require('socket.io-client');
 
 var socket = io('http://localhost:8080');
 socket.on('connect', function() {
-  socket.on('GET:RESULT', function(data) {
-    var API = eval(data)(socket);
+  socket.on('GET:RESULT', function(api) {
+    var API = eval(api.data)(socket, true);
     console.log("Got API");
 
     API.GET("/user/1", {}, function(user) {

@@ -3,9 +3,9 @@ var io = require('socket.io-client');
 var socket = io('http://localhost:8080');
 socket.on('connect', function() {
   socket.emit('PUT', {
-    uri: '/user/j:user',
+    uri: '/user',
     json: {
-      user: {
+      userdata: {
         name: "John Smith",
         age: 42
       }

@@ -8,13 +8,14 @@ var log = function(str) {
 
 
 var UserController = {
-  // result is a callback, you can omit it if your route does not return anything
-  get: function(id, andThen) {
+  // route is an object (see in the doc) always coming first !
+  get: function(route, id) {
     log("UserController received request GET for " + id);
-    andThen({id: id, name: "John Smith", age: 42});
+    // Sends back OK result with data
+    route.OK({id: id, name: "John Smith", age: 42});
   },
-  // omit result param so this route can not return anything
-  useless: function() {
+  // this method does nothing, so will never send answer
+  useless: function(route) {
     log("UserController received request GET for useless method");
   }
 };
@@ -25,15 +26,19 @@ var ControllerScope = {
   "UserController": UserController
 };
 
+// This time, we use public api. So our routes are private by default (for security purposes)
+// Specify public attribute on routes to bypass auth process
 var router = new RestfulRouter(ControllerScope, {
   GET: [
     {
       uri: "/user/useless",
-      to: "UserController.useless()"
+      to: "UserController.useless()",
+      public: true
     },
     {
       uri: "/user/p:id",
-      to: "UserController.get(id)"
+      to: "UserController.get(id)",
+      public: true
     }
   ]
 }, true);
