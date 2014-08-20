@@ -59,15 +59,16 @@
 <span class="kd">var</span> <span class="nx">RestfulRouter</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"restful.io"</span><span class="p">);</span>
 
 <span class="kd">var</span> <span class="nx">FooController</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="c1">// Because Node is asynchronous, is more convenient to use an async pattern, and not return directly a result.</span>
-  <span class="c1">// result is a callback (you can obviously change the name), you can omit it if your route does not return anything</span>
-  <span class="nx">bar</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">param</span><span class="p">,</span> <span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// each method of your controllers has to take the route as first parameter</span>
+  <span class="nx">bar</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">route</span><span class="p">,</span> <span class="nx">param</span><span class="p">)</span> <span class="p">{</span>
     <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"FooController.bar("</span><span class="o">+</span><span class="nx">param</span><span class="o">+</span><span class="s2">");"</span><span class="p">);</span>
-    <span class="nx">result</span><span class="p">(</span><span class="s2">"OK"</span><span class="p">);</span>
+    <span class="c1">// Here we route the request</span>
+    <span class="nx">route</span><span class="p">.</span><span class="nx">OK</span><span class="p">(</span><span class="s2">"OK"</span><span class="p">);</span>
   <span class="p">},</span>
   <span class="c1">// Your route does not return anything, omit result callback</span>
-  <span class="nx">barJson</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">jsonParam</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">barJson</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">route</span><span class="p">,</span> <span class="nx">jsonParam</span><span class="p">)</span> <span class="p">{</span>
     <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"FooController.barJson("</span><span class="o">+</span><span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">jsonParam</span><span class="p">)</span><span class="o">+</span><span class="s2">");"</span><span class="p">);</span>
+    <span class="c1">// You don't call any of the route's methods so no response</span>
   <span class="p">}</span>
 <span class="p">};</span>
 
@@ -97,8 +98,9 @@
   <span class="nx">PUT</span><span class="o">:</span> <span class="p">[</span>
     <span class="p">{</span>
       <span class="c1">// j:varname indicates a JSON object parameter</span>
-      <span class="nx">uri</span><span class="o">:</span> <span class="s2">"/foo/j:param"</span><span class="p">,</span>
-      <span class="nx">to</span><span class="o">:</span> <span class="s2">"FooController.barJson(param)"</span>
+      <span class="c1">// That means that the client have to send something which looks like =&gt; {user: {/* data */}}</span>
+      <span class="nx">uri</span><span class="o">:</span> <span class="s2">"/foo"</span><span class="p">,</span>
+      <span class="nx">to</span><span class="o">:</span> <span class="s2">"FooController.barJson(j:user)"</span>
     <span class="p">}</span>
   <span class="p">],</span>
   <span class="nx">POST</span><span class="o">:</span> <span class="p">[</span>
@@ -121,7 +123,46 @@
 <span class="nx">http</span><span class="p">.</span><span class="nx">listen</span><span class="p">(</span><span class="mi">8080</span><span class="p">);</span>
 </pre></div>
 
-<h2>
+<h3>
+<a name="route-object-methods-and-attrs" class="anchor" href="#route-object-methods-and-attrs"><span class="octicon octicon-link"></span></a>Route object methods and attrs</h3>
+
+<p>By convention, upper case identifiers end the route and send back something to client.
+Lowercase identifiers does not end the route.</p>
+
+<table>
+<thead><tr>
+<th>Name</th>
+<th>Parameters</th>
+<th>Effect</th>
+<th>Example</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>OK</td>
+<td>data: *</td>
+<td>Sends back data to the client with a 200 result</td>
+<td>route.OK({message: "done"})</td>
+</tr>
+<tr>
+<td>FORBIDDEN</td>
+<td>err: String</td>
+<td>Sends back data to the client with a 403 result</td>
+<td>route.FORBIDDEN("Error !!")</td>
+</tr>
+<tr>
+<td>follow</td>
+<td>NA</td>
+<td>If the route is not yet processed, "follow" sends the request to its routeHandler. This is useful with AuthHandlers</td>
+<td>route.follow()</td>
+</tr>
+<tr>
+<td>token</td>
+<td>NA</td>
+<td>If you are authentified, you can access the token.</td>
+<td>route.token</td>
+</tr>
+</tbody>
+</table><h2>
 <a name="client-side" class="anchor" href="#client-side"><span class="octicon octicon-link"></span></a>Client-side</h2>
 
 <p>You have two ways to deal with the client side.</p>
@@ -134,6 +175,42 @@
 <div class="highlight highlight-javascript"><pre><span class="nx">router</span><span class="p">.</span><span class="nx">start</span><span class="p">(</span><span class="nx">io</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span>
 </pre></div>
 
+<h4>
+<a name="authentication-note" class="anchor" href="#authentication-note"><span class="octicon octicon-link"></span></a>Authentication note</h4>
+
+<p>By default, when client API is exposed, every request has to be authenticated.
+Default authentication handler is bound on uri /api/login and is very permissive : no credentials needed.</p>
+
+<p>But actually this boolean parameter can be set to any valid AuthHandler. A valid AuthHandler looks like a controller designed for authentication purposes :</p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">router</span><span class="p">.</span><span class="nx">start</span><span class="p">(</span><span class="nx">io</span><span class="p">,</span> <span class="p">{</span>
+  <span class="c1">// Warning : Pseudocode below :)</span>
+
+  <span class="nx">handleRoutes</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">routes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nx">nothing</span>
+
+  <span class="nx">handleRequest</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">route</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nx">nothing</span> <span class="p">(</span><span class="nx">you</span> <span class="nx">have</span> <span class="nx">to</span> <span class="nx">call</span> <span class="nx">one</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">route</span> <span class="nx">methods</span><span class="p">)</span>
+
+  <span class="nx">login</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">route</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nx">nothing</span> <span class="p">(</span><span class="nx">you</span> <span class="nx">have</span> <span class="nx">to</span> <span class="nx">call</span> <span class="nx">one</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">route</span> <span class="nx">methods</span><span class="p">)</span>
+
+  <span class="nx">logout</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">route</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nx">nothing</span> <span class="p">(</span><span class="nx">you</span> <span class="nx">have</span> <span class="nx">to</span> <span class="nx">call</span> <span class="nx">one</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">route</span> <span class="nx">methods</span><span class="p">)</span>
+<span class="p">});</span>
+</pre></div>
+
+<p>If you need to know more about that, please read auth/TokenAuthHandler.coffee</p>
+
+<p>In case you need public API without any kind of authentication, just put a "public" attribute to true for each route you want to expose :</p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">routes</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="nx">GET</span><span class="o">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nx">uri</span><span class="o">:</span> <span class="s2">"/iam/public"</span><span class="p">,</span>
+      <span class="nx">to</span><span class="o">:</span> <span class="s2">"IamController.public()"</span><span class="p">,</span>
+      <span class="kr">public</span><span class="o">:</span> <span class="kc">true</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+
 <p>Now on the client side, you can make a GET on /api to retrieve the code :</p>
 
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">(</span><span class="s1">'http://localhost:8080'</span><span class="p">);</span>
@@ -143,19 +220,35 @@
     <span class="c1">// You get JS code to eval</span>
     <span class="kd">var</span> <span class="nx">API</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="nx">apiSrc</span><span class="p">)(</span><span class="nx">socket</span><span class="p">);</span>
 
-    <span class="c1">// Get foo 1</span>
-    <span class="nx">API</span><span class="p">.</span><span class="nx">GET</span><span class="p">(</span><span class="s2">"/foo/1"</span><span class="p">,</span> <span class="p">{},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
-      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Result GET : "</span> <span class="o">+</span> <span class="nx">data</span><span class="p">);</span>
+    <span class="c1">// If you don't use authentication, skip this call</span>
+    <span class="nx">API</span><span class="p">.</span><span class="nx">GET</span><span class="p">(</span><span class="s2">"/api/login"</span><span class="p">,</span> <span class="p">{},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">// You HAVE to do the following.</span>
+      <span class="nx">API</span><span class="p">.</span><span class="nx">token</span> <span class="o">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">data</span><span class="p">;</span>
+      <span class="c1">// Now forget about the authentication.......</span>
+
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Now logged in"</span><span class="p">);</span>
+      <span class="c1">// Get foo 1</span>
+      <span class="nx">API</span><span class="p">.</span><span class="nx">GET</span><span class="p">(</span><span class="s2">"/foo/1"</span><span class="p">,</span> <span class="p">{},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Result GET : "</span> <span class="o">+</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">result</span><span class="p">));</span>
+
+        <span class="nx">API</span><span class="p">.</span><span class="nx">PUT</span><span class="p">(</span><span class="s2">"/foo"</span><span class="p">,</span> <span class="p">{</span>
+          <span class="nx">user</span><span class="o">:</span> <span class="p">{</span>
+            <span class="nx">name</span><span class="o">:</span> <span class="s2">"John Smith"</span><span class="p">,</span>
+            <span class="nx">age</span><span class="o">:</span> <span class="mi">42</span>
+          <span class="p">}</span>
+        <span class="p">},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
+          <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Result PUT : "</span> <span class="o">+</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">result</span><span class="p">));</span>
+
+          <span class="c1">// ...........until now :)</span>
+          <span class="nx">API</span><span class="p">.</span><span class="nx">GET</span><span class="p">(</span><span class="s2">"/api/logout"</span><span class="p">,</span> <span class="p">{},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Now logged off"</span><span class="p">);</span>
+          <span class="p">});</span>
+        <span class="p">});</span>
+
+      <span class="p">});</span>
+
     <span class="p">});</span>
 
-    <span class="nx">API</span><span class="p">.</span><span class="nx">PUT</span><span class="p">(</span><span class="s2">"/foo/j:user"</span><span class="p">,</span> <span class="p">{</span>
-      <span class="nx">user</span><span class="o">:</span> <span class="p">{</span>
-        <span class="nx">name</span><span class="o">:</span> <span class="s2">"John Smith"</span><span class="p">,</span>
-        <span class="nx">age</span><span class="o">:</span> <span class="mi">42</span>
-      <span class="p">}</span>
-    <span class="p">},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">user</span><span class="p">)</span> <span class="p">{</span>
-      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Result PUT : "</span> <span class="o">+</span> <span class="nx">user</span><span class="p">);</span>
-    <span class="p">});</span>
   <span class="p">});</span>
 
   <span class="c1">// Asking for API</span>
@@ -180,6 +273,7 @@
 
 <div class="highlight highlight-javascript"><pre><span class="kd">function</span> <span class="nx">get</span><span class="p">(</span><span class="nx">API</span><span class="p">)</span> <span class="p">{</span>
   <span class="c1">// Do your stuff and add your custom methods here</span>
+  <span class="c1">// Note : this method is synchronous. No need for "andThen" callback. But don't forget to return valid API object !</span>
   <span class="c1">// Remember that API code is sent WITHOUT the context, so never use variables which doesn't live in API context.</span>
   <span class="k">return</span> <span class="nx">API</span><span class="p">;</span>
 <span class="p">}</span>
@@ -196,19 +290,21 @@
 
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">(</span><span class="s1">'http://localhost:8080'</span><span class="p">);</span>
 <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-  <span class="c1">// For primitive parameters, you can pass it directly in the URI</span>
+  <span class="c1">// For simple parameters, you can pass it directly in the URI</span>
   <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'GET'</span><span class="p">,</span> <span class="s1">'/foo/4'</span><span class="p">);</span>
 
   <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'GET:RESULT'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
     <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Result GET : "</span> <span class="o">+</span> <span class="nx">data</span><span class="p">);</span>
   <span class="p">});</span>
 
-  <span class="c1">// For complex JSON parameter, you have to send a plain JSON object corresponding the format below</span>
+  <span class="c1">// For complex parameters, you have to send a plain JSON object corresponding the format below</span>
   <span class="c1">// The name of your parameter is used to retrieve the value</span>
   <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'PUT'</span><span class="p">,</span> <span class="p">{</span>
     <span class="c1">// Here we provide a requestId</span>
     <span class="nx">requestId</span><span class="o">:</span> <span class="s1">'REQUEST_1'</span>
-    <span class="nx">uri</span><span class="o">:</span> <span class="s1">'/foo/j:user'</span><span class="p">,</span>
+    <span class="c1">// If the request is authenticated, put this param too</span>
+    <span class="nx">token</span><span class="o">:</span> <span class="s1">'foo'</span><span class="p">,</span>
+    <span class="nx">uri</span><span class="o">:</span> <span class="s1">'/foo'</span><span class="p">,</span>
     <span class="nx">json</span><span class="o">:</span> <span class="p">{</span>
       <span class="nx">user</span><span class="o">:</span> <span class="p">{</span>
         <span class="nx">name</span><span class="o">:</span> <span class="s2">"John Smith"</span><span class="p">,</span>
@@ -240,13 +336,13 @@
 <tbody>
 <tr>
 <td>ctx</td>
-<td>JSON</td>
+<td>JSON Object</td>
 <td>NA</td>
 <td>{ "FooController": FooController, "BarController": BarController }</td>
 </tr>
 <tr>
 <td>routes</td>
-<td>JSON</td>
+<td>JSON Object</td>
 <td>NA</td>
 <td>Main JSON config. See snippet before</td>
 </tr>
@@ -272,13 +368,13 @@
 <td>parameterPrefix</td>
 <td>string</td>
 <td>"p:"</td>
-<td>Used to identify primitive parameter.</td>
+<td>Used to identify primitive parameter in route URI.</td>
 </tr>
 <tr>
 <td>jsonParameterPrefix</td>
 <td>string</td>
 <td>"j:"</td>
-<td>Used to identify complex JSON parameter.</td>
+<td>Used to identify complex JSON parameter in route handler call.</td>
 </tr>
 <tr>
 <td>resultSuffix</td>
@@ -310,8 +406,8 @@
 <a name="currently-working-on" class="anchor" href="#currently-working-on"><span class="octicon octicon-link"></span></a>Currently working on</h4>
 
 <ul>
+<li>Better authentication support</li>
 <li>Known limitations</li>
-<li>Better parameters model</li>
 <li>File support</li>
 <li>Get rid of the context object</li>
 </ul><h4>
