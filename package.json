@@ -18,6 +18,13 @@
     "q": "^1.0.1",
     "socket.io-client": "^1.0.6"
   },
+  "config": {
+    "blanket": {
+      "pattern": "src",
+      "data-cover-never": "node_modules",
+      "loader": "./node-loaders/coffee-script"
+    }
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
