@@ -10,7 +10,18 @@
   "description": "Restful-like routing module for NodeJS and socket.io",
   "main": "index.js",
   "devDependencies": {
-    "coffee-script": "^1.7.1"
+    "blanket": "^1.1.6",
+    "chai": "^1.9.1",
+    "chai-as-promised": "^4.1.1",
+    "coffee-script": "^1.7.1",
+    "mocha": "^1.21.4",
+    "q": "^1.0.1",
+    "socket.io-client": "^1.0.6"
+  },
+  "config": {
+    "blanket": {
+      "pattern": "."
+    }
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
