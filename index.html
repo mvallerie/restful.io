@@ -62,22 +62,21 @@
   <span class="c1">// each method of your controllers has to take the route as first parameter</span>
   <span class="nx">bar</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">route</span><span class="p">,</span> <span class="nx">param</span><span class="p">)</span> <span class="p">{</span>
     <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"FooController.bar("</span><span class="o">+</span><span class="nx">param</span><span class="o">+</span><span class="s2">");"</span><span class="p">);</span>
-    <span class="c1">// Here we route the request</span>
-    <span class="nx">route</span><span class="p">.</span><span class="nx">OK</span><span class="p">(</span><span class="s2">"OK"</span><span class="p">);</span>
+    <span class="nx">route</span><span class="p">.</span><span class="nx">OK</span><span class="p">(</span><span class="s2">"body"</span><span class="p">);</span>
   <span class="p">},</span>
-  <span class="c1">// Your route does not return anything, omit result callback</span>
   <span class="nx">barJson</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">route</span><span class="p">,</span> <span class="nx">jsonParam</span><span class="p">)</span> <span class="p">{</span>
     <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"FooController.barJson("</span><span class="o">+</span><span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">jsonParam</span><span class="p">)</span><span class="o">+</span><span class="s2">");"</span><span class="p">);</span>
+    <span class="nx">route</span><span class="p">.</span><span class="nx">OK</span><span class="p">(</span><span class="s2">"body"</span><span class="p">)</span>
     <span class="c1">// You don't call any of the route's methods so no response</span>
   <span class="p">}</span>
 <span class="p">};</span>
 
 <span class="c1">// This ugly stuff is actually used to have a way to link route string and JS object</span>
-<span class="kd">var</span> <span class="nx">ControllerScope</span> <span class="o">=</span> <span class="p">{</span>
+<span class="kd">var</span> <span class="nx">controllers</span> <span class="o">=</span> <span class="p">{</span>
   <span class="s2">"FooController"</span><span class="o">:</span> <span class="nx">FooController</span>
 <span class="p">};</span>
 
-<span class="kd">var</span> <span class="nx">router</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">RestfulRouter</span><span class="p">(</span><span class="nx">ControllerScope</span><span class="p">,</span> <span class="p">{</span>
+<span class="kd">var</span> <span class="nx">router</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">RestfulRouter</span><span class="p">(</span><span class="nx">controllers</span><span class="p">,</span> <span class="p">{</span>
   <span class="c1">// These are method names, feel free to change or to add</span>
   <span class="c1">// Here I used GET/PUT/DELETE only to mimic classic RESTful app</span>
   <span class="nx">GET</span><span class="o">:</span> <span class="p">[</span>
@@ -104,15 +103,13 @@
     <span class="p">}</span>
   <span class="p">],</span>
   <span class="nx">POST</span><span class="o">:</span> <span class="p">[</span>
-    <span class="c1">// No route yet</span>
   <span class="p">],</span>
   <span class="nx">DELETE</span><span class="o">:</span> <span class="p">[</span>
-    <span class="c1">// No route yet</span>
   <span class="p">],</span>
   <span class="c1">// Nested methods are supported</span>
   <span class="nx">FOO</span><span class="o">:</span> <span class="p">{</span>
     <span class="nx">BAR</span><span class="o">:</span> <span class="p">[</span>
-      <span class="c1">// Here, the method will be FOO:BAR (: is the default separator)</span>
+      <span class="c1">// Here, the method will be FOO:BAR (':' is the default separator)</span>
       <span class="c1">// No route yet</span>
     <span class="p">]</span>
   <span class="p">}</span>
@@ -124,10 +121,7 @@
 </pre></div>
 
 <h3>
-<a name="route-object-methods-and-attrs" class="anchor" href="#route-object-methods-and-attrs"><span class="octicon octicon-link"></span></a>Route object methods and attrs</h3>
-
-<p>By convention, upper case identifiers end the route and send back something to client.
-Lowercase identifiers does not end the route.</p>
+<a name="route-methods" class="anchor" href="#route-methods"><span class="octicon octicon-link"></span></a>Route methods</h3>
 
 <table>
 <thead><tr>
@@ -145,73 +139,27 @@ Lowercase identifiers does not end the route.</p>
 </tr>
 <tr>
 <td>FORBIDDEN</td>
-<td>err: String</td>
-<td>Sends back data to the client with a 403 result</td>
+<td>err: *</td>
+<td>Sends back err to the client with a 403 result</td>
 <td>route.FORBIDDEN("Error !!")</td>
 </tr>
 <tr>
-<td>follow</td>
-<td>NA</td>
-<td>If the route is not yet processed, "follow" sends the request to its routeHandler. This is useful with AuthHandlers</td>
-<td>route.follow()</td>
+<td>ISE</td>
+<td>err: *</td>
+<td>Sends back err to the client with a 500 result</td>
+<td>route.ISE("Error !!")</td>
 </tr>
 <tr>
-<td>token</td>
-<td>NA</td>
-<td>If you are authentified, you can access the token.</td>
-<td>route.token</td>
+<td>NOT_FOUND</td>
+<td>err: *</td>
+<td>Sends back err to the client with a 404 result</td>
+<td>route.NOT_FOUND("Error !!")</td>
 </tr>
 </tbody>
 </table><h2>
-<a name="client-side" class="anchor" href="#client-side"><span class="octicon octicon-link"></span></a>Client-side</h2>
+<a name="client-api" class="anchor" href="#client-api"><span class="octicon octicon-link"></span></a>Client API</h2>
 
-<p>You have two ways to deal with the client side.</p>
-
-<h3>
-<a name="client-api" class="anchor" href="#client-api"><span class="octicon octicon-link"></span></a>Client API</h3>
-
-<p>This is the preferred way. The second parameter of start method is a boolean. Set it to true on the server side as below :</p>
-
-<div class="highlight highlight-javascript"><pre><span class="nx">router</span><span class="p">.</span><span class="nx">start</span><span class="p">(</span><span class="nx">io</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span>
-</pre></div>
-
-<h4>
-<a name="authentication-note" class="anchor" href="#authentication-note"><span class="octicon octicon-link"></span></a>Authentication note</h4>
-
-<p>By default, when client API is exposed, every request has to be authenticated.
-Default authentication handler is bound on uri /api/login and is very permissive : no credentials needed.</p>
-
-<p>But actually this boolean parameter can be set to any valid AuthHandler. A valid AuthHandler looks like a controller designed for authentication purposes :</p>
-
-<div class="highlight highlight-javascript"><pre><span class="nx">router</span><span class="p">.</span><span class="nx">start</span><span class="p">(</span><span class="nx">io</span><span class="p">,</span> <span class="p">{</span>
-  <span class="c1">// Warning : Pseudocode below :)</span>
-
-  <span class="nx">handleRoutes</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">routes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nx">nothing</span>
-
-  <span class="nx">handleRequest</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">route</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nx">nothing</span> <span class="p">(</span><span class="nx">you</span> <span class="nx">have</span> <span class="nx">to</span> <span class="nx">call</span> <span class="nx">one</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">route</span> <span class="nx">methods</span><span class="p">)</span>
-
-  <span class="nx">login</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">route</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nx">nothing</span> <span class="p">(</span><span class="nx">you</span> <span class="nx">have</span> <span class="nx">to</span> <span class="nx">call</span> <span class="nx">one</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">route</span> <span class="nx">methods</span><span class="p">)</span>
-
-  <span class="nx">logout</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">route</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nx">nothing</span> <span class="p">(</span><span class="nx">you</span> <span class="nx">have</span> <span class="nx">to</span> <span class="nx">call</span> <span class="nx">one</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">route</span> <span class="nx">methods</span><span class="p">)</span>
-<span class="p">});</span>
-</pre></div>
-
-<p>If you need to know more about that, please read auth/TokenAuthHandler.coffee</p>
-
-<p>In case you need public API without any kind of authentication, just put a "public" attribute to true for each route you want to expose :</p>
-
-<div class="highlight highlight-javascript"><pre><span class="nx">routes</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="nx">GET</span><span class="o">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nx">uri</span><span class="o">:</span> <span class="s2">"/iam/public"</span><span class="p">,</span>
-      <span class="nx">to</span><span class="o">:</span> <span class="s2">"IamController.public()"</span><span class="p">,</span>
-      <span class="kr">public</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
-
-<p>Now on the client side, you can make a GET on /api to retrieve the code :</p>
+<p>Now on the client side, you can make a GET on /api to retrieve the code of the API object :</p>
 
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">(</span><span class="s1">'http://localhost:8080'</span><span class="p">);</span>
 <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
@@ -219,14 +167,6 @@ Default authentication handler is bound on uri /api/login and is very permissive
   <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'GET:RESULT'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">apiSrc</span><span class="p">)</span> <span class="p">{</span>
     <span class="c1">// You get JS code to eval</span>
     <span class="kd">var</span> <span class="nx">API</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="nx">apiSrc</span><span class="p">)(</span><span class="nx">socket</span><span class="p">);</span>
-
-    <span class="c1">// If you don't use authentication, skip this call</span>
-    <span class="nx">API</span><span class="p">.</span><span class="nx">GET</span><span class="p">(</span><span class="s2">"/api/login"</span><span class="p">,</span> <span class="p">{},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-      <span class="c1">// You HAVE to do the following.</span>
-      <span class="nx">API</span><span class="p">.</span><span class="nx">token</span> <span class="o">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">data</span><span class="p">;</span>
-      <span class="c1">// Now forget about the authentication.......</span>
-
-      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Now logged in"</span><span class="p">);</span>
       <span class="c1">// Get foo 1</span>
       <span class="nx">API</span><span class="p">.</span><span class="nx">GET</span><span class="p">(</span><span class="s2">"/foo/1"</span><span class="p">,</span> <span class="p">{},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
         <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Result GET : "</span> <span class="o">+</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">result</span><span class="p">));</span>
@@ -238,18 +178,11 @@ Default authentication handler is bound on uri /api/login and is very permissive
           <span class="p">}</span>
         <span class="p">},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
           <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Result PUT : "</span> <span class="o">+</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">result</span><span class="p">));</span>
-
-          <span class="c1">// ...........until now :)</span>
-          <span class="nx">API</span><span class="p">.</span><span class="nx">GET</span><span class="p">(</span><span class="s2">"/api/logout"</span><span class="p">,</span> <span class="p">{},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Now logged off"</span><span class="p">);</span>
-          <span class="p">});</span>
         <span class="p">});</span>
 
       <span class="p">});</span>
 
     <span class="p">});</span>
-
-  <span class="p">});</span>
 
   <span class="c1">// Asking for API</span>
   <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'GET'</span><span class="p">,</span> <span class="s1">'/api'</span><span class="p">);</span>
@@ -273,53 +206,15 @@ Default authentication handler is bound on uri /api/login and is very permissive
 
 <div class="highlight highlight-javascript"><pre><span class="kd">function</span> <span class="nx">get</span><span class="p">(</span><span class="nx">API</span><span class="p">)</span> <span class="p">{</span>
   <span class="c1">// Do your stuff and add your custom methods here</span>
-  <span class="c1">// Note : this method is synchronous. No need for "andThen" callback. But don't forget to return valid API object !</span>
   <span class="c1">// Remember that API code is sent WITHOUT the context, so never use variables which doesn't live in API context.</span>
   <span class="k">return</span> <span class="nx">API</span><span class="p">;</span>
 <span class="p">}</span>
 </pre></div>
 
-<h3>
-<a name="raw-javascript-with-socketio-client" class="anchor" href="#raw-javascript-with-socketio-client"><span class="octicon octicon-link"></span></a>Raw Javascript (with socket.io-client)</h3>
+<h2>
+<a name="session-support" class="anchor" href="#session-support"><span class="octicon octicon-link"></span></a>Session support</h2>
 
-<p>This method is dangerous. Because socket.io is asynchronous by nature, you can have several handlers listening on the same event.</p>
-
-<p>In restful.io, each request is associated with a unique ID. If you use raw Javascript, you will have to handle these identifiers manually.</p>
-
-<p>Remember that if you don't provide any unique ID to socket.emit, other handlers listening for response might intercept your request's response too, potentially conflicting with yours, which may end on unpredictable behaviours.</p>
-
-<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">(</span><span class="s1">'http://localhost:8080'</span><span class="p">);</span>
-<span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-  <span class="c1">// For simple parameters, you can pass it directly in the URI</span>
-  <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'GET'</span><span class="p">,</span> <span class="s1">'/foo/4'</span><span class="p">);</span>
-
-  <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'GET:RESULT'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Result GET : "</span> <span class="o">+</span> <span class="nx">data</span><span class="p">);</span>
-  <span class="p">});</span>
-
-  <span class="c1">// For complex parameters, you have to send a plain JSON object corresponding the format below</span>
-  <span class="c1">// The name of your parameter is used to retrieve the value</span>
-  <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'PUT'</span><span class="p">,</span> <span class="p">{</span>
-    <span class="c1">// Here we provide a requestId</span>
-    <span class="nx">requestId</span><span class="o">:</span> <span class="s1">'REQUEST_1'</span>
-    <span class="c1">// If the request is authenticated, put this param too</span>
-    <span class="nx">token</span><span class="o">:</span> <span class="s1">'foo'</span><span class="p">,</span>
-    <span class="nx">uri</span><span class="o">:</span> <span class="s1">'/foo'</span><span class="p">,</span>
-    <span class="nx">json</span><span class="o">:</span> <span class="p">{</span>
-      <span class="nx">user</span><span class="o">:</span> <span class="p">{</span>
-        <span class="nx">name</span><span class="o">:</span> <span class="s2">"John Smith"</span><span class="p">,</span>
-        <span class="nx">age</span><span class="o">:</span> <span class="mi">42</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">});</span>
-
-  <span class="c1">// We have to listen on PUT:requestId and not on PUT:RESULT</span>
-  <span class="c1">// Actually, RESULT is the default requestId</span>
-  <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'PUT:REQUEST_1'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Result PUT : "</span> <span class="o">+</span> <span class="nx">data</span><span class="p">);</span>
-  <span class="p">});</span>
-<span class="p">});</span>
-</pre></div>
+<p>TODO</p>
 
 <h2>
 <a name="and-more" class="anchor" href="#and-more"><span class="octicon octicon-link"></span></a>And more</h2>
@@ -383,9 +278,9 @@ Default authentication handler is bound on uri /api/login and is very permissive
 <td>Default requestId fired to client if requestId not provided (GET:RESULT, POST:RESULT, ...)</td>
 </tr>
 </tbody>
-</table><p>When you start the router, as a third parameter, you may use a callback to handle user connection :</p>
+</table><p>When you start the router, as a second optional parameter, you may use a callback to handle user connection :</p>
 
-<div class="highlight highlight-javascript"><pre><span class="nx">router</span><span class="p">.</span><span class="nx">start</span><span class="p">(</span><span class="nx">io</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">socket</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight highlight-javascript"><pre><span class="nx">router</span><span class="p">.</span><span class="nx">start</span><span class="p">(</span><span class="nx">io</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">socket</span><span class="p">)</span> <span class="p">{</span>
   <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"User connected on : "</span> <span class="o">+</span> <span class="nx">socket</span><span class="p">);</span>
 <span class="p">});</span>
 </pre></div>
@@ -403,19 +298,24 @@ Default authentication handler is bound on uri /api/login and is very permissive
 <li>Error handling is very approximative</li>
 <li>socket.io only</li>
 </ul><h4>
+<a name="urgent-todo" class="anchor" href="#urgent-todo"><span class="octicon octicon-link"></span></a>Urgent TODO</h4>
+
+<ul>
+<li>Update README for version 0.0.11</li>
+<li>Update examples for version 0.0.11</li>
+</ul><h4>
 <a name="currently-working-on" class="anchor" href="#currently-working-on"><span class="octicon octicon-link"></span></a>Currently working on</h4>
 
 <ul>
-<li>Better authentication support</li>
-<li>Known limitations</li>
+<li>Get rid of socket.io to use raw websockets</li>
 <li>File support</li>
-<li>Get rid of the context object</li>
+<li>Built-in authentication support</li>
+<li>Known limitations</li>
 </ul><h4>
 <a name="ideas-for-later" class="anchor" href="#ideas-for-later"><span class="octicon octicon-link"></span></a>Ideas for later</h4>
 
 <ul>
-<li>Get rid of socket.io to use raw Websockets ?</li>
-<li>Client module ?</li>
+<li>Client module</li>
 </ul>
       </section>
       <footer>
