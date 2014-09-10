@@ -30,22 +30,21 @@ var FooController = {
   // each method of your controllers has to take the route as first parameter
   bar: function(route, param) {
     console.log("FooController.bar("+param+");");
-    // Here we route the request
-    route.OK("OK");
+    route.OK("body");
   },
-  // Your route does not return anything, omit result callback
   barJson: function(route, jsonParam) {
     console.log("FooController.barJson("+JSON.stringify(jsonParam)+");");
+    route.OK("body")
     // You don't call any of the route's methods so no response
   }
 };
 
 // This ugly stuff is actually used to have a way to link route string and JS object
-var ControllerScope = {
+var controllers = {
   "FooController": FooController
 };
 
-var router = new RestfulRouter(ControllerScope, {
+var router = new RestfulRouter(controllers, {
   // These are method names, feel free to change or to add
   // Here I used GET/PUT/DELETE only to mimic classic RESTful app
   GET: [
@@ -72,15 +71,13 @@ var router = new RestfulRouter(ControllerScope, {
     }
   ],
   POST: [
-    // No route yet
   ],
   DELETE: [
-    // No route yet
   ],
   // Nested methods are supported
   FOO: {
     BAR: [
-      // Here, the method will be FOO:BAR (: is the default separator)
+      // Here, the method will be FOO:BAR (':' is the default separator)
       // No route yet
     ]
   }
@@ -91,70 +88,18 @@ router.start(io);
 http.listen(8080);
 ```
 
-### Route object methods and attrs
-
-By convention, upper case identifiers end the route and send back something to client.
-Lowercase identifiers does not end the route.
+### Route methods
 
 | Name | Parameters | Effect | Example |
 | ---- | ---- | -------- | ------  |
 | OK  | data: * | Sends back data to the client with a 200 result | route.OK({message: "done"}) |
 | FORBIDDEN | err: * | Sends back err to the client with a 403 result | route.FORBIDDEN("Error !!") |
 | ISE | err: * | Sends back err to the client with a 500 result | route.ISE("Error !!") |
-| NOT_FOUND | err: * | Sends back err to the client with a 404 result | route.NOT_FOUND("Error !!") | 
-| follow | NA | If the route is not yet processed, "follow" sends the request to its routeHandler. This is useful with AuthHandlers | route.follow() |
-| token | NA | If you are authentified, you can access the token. | route.token |
+| NOT_FOUND | err: * | Sends back err to the client with a 404 result | route.NOT_FOUND("Error !!") |
 
-## Client-side
+## Client API
 
-You have two ways to deal with the client side.
-
-### Client API
-
-This is the preferred way. The second parameter of start method is a boolean. Set it to true on the server side as below :
-
-```javascript
-router.start(io, true);
-```
-
-#### Authentication note
-
-By default, when client API is exposed, every request has to be authenticated.
-Default authentication handler is bound on uri /api/login and is very permissive : no credentials needed.
-
-But actually this boolean parameter can be set to any valid AuthHandler. A valid AuthHandler looks like a controller designed for authentication purposes :
-
-```javascript
-router.start(io, {
-  // Warning : Pseudocode below :)
-
-  handleRoutes: function(routes) -> nothing
-
-  handleRequest: function(route, data) -> nothing (you have to call one of the route methods)
-
-  login: function(route, data) -> nothing (you have to call one of the route methods)
-
-  logout: function(route) -> nothing (you have to call one of the route methods)
-});
-```
-
-If you need to know more about that, please read auth/TokenAuthHandler.coffee
-
-In case you need public API without any kind of authentication, just put a "public" attribute to true for each route you want to expose :
-
-```javascript
-routes = {
-  GET: [
-    {
-      uri: "/iam/public",
-      to: "IamController.public()",
-      public: true
-    }
-  ]
-}
-```
-
-Now on the client side, you can make a GET on /api to retrieve the code :
+Now on the client side, you can make a GET on /api to retrieve the code of the API object :
 
 
 ```javascript
@@ -164,14 +109,6 @@ socket.on('connect', function() {
   socket.on('GET:RESULT', function(apiSrc) {
     // You get JS code to eval
     var API = eval(apiSrc)(socket);
-
-    // If you don't use authentication, skip this call
-    API.GET("/api/login", {}, function(result) {
-      // You HAVE to do the following.
-      API.token = r.data;
-      // Now forget about the authentication.......
-
-      console.log("Now logged in");
       // Get foo 1
       API.GET("/foo/1", {}, function(result) {
         console.log("Result GET : " + JSON.stringify(result));
@@ -183,18 +120,11 @@ socket.on('connect', function() {
           }
         }, function(result) {
           console.log("Result PUT : " + JSON.stringify(result));
-
-          // ...........until now :)
-          API.GET("/api/logout", {}, function(result) {
-            console.log("Now logged off");
-          });
         });
 
       });
 
     });
-
-  });
 
   // Asking for API
   socket.emit('GET', '/api');
@@ -221,54 +151,15 @@ If you need to expose to client more API methods than autogenerated ones, just p
 ```javascript
 function get(API) {
   // Do your stuff and add your custom methods here
-  // Note : this method is synchronous. No need for "andThen" callback. But don't forget to return valid API object !
   // Remember that API code is sent WITHOUT the context, so never use variables which doesn't live in API context.
   return API;
 }
 ```
 
+## Session support
 
-### Raw Javascript (with socket.io-client)
+TODO
 
-This method is dangerous. Because socket.io is asynchronous by nature, you can have several handlers listening on the same event.
-
-In restful.io, each request is associated with a unique ID. If you use raw Javascript, you will have to handle these identifiers manually.
-
-Remember that if you don't provide any unique ID to socket.emit, other handlers listening for response might intercept your request's response too, potentially conflicting with yours, which may end on unpredictable behaviours.
-
-```javascript
-var socket = io('http://localhost:8080');
-socket.on('connect', function() {
-  // For simple parameters, you can pass it directly in the URI
-  socket.emit('GET', '/foo/4');
-
-  socket.on('GET:RESULT', function(data) {
-    console.log("Result GET : " + data);
-  });
-
-  // For complex parameters, you have to send a plain JSON object corresponding the format below
-  // The name of your parameter is used to retrieve the value
-  socket.emit('PUT', {
-    // Here we provide a requestId
-    requestId: 'REQUEST_1'
-    // If the request is authenticated, put this param too
-    token: 'foo',
-    uri: '/foo',
-    json: {
-      user: {
-        name: "John Smith",
-        age: 42
-      }
-    }
-  });
-
-  // We have to listen on PUT:requestId and not on PUT:RESULT
-  // Actually, RESULT is the default requestId
-  socket.on('PUT:REQUEST_1', function(data) {
-    console.log("Result PUT : " + data);
-  });
-});
-```
 
 ## And more
 
@@ -285,10 +176,10 @@ Here is described the usable parameters when constructing a router :
 | jsonParameterPrefix | string | "j:" | Used to identify complex JSON parameter in route handler call. |
 | resultSuffix | string | "RESULT" | Default requestId fired to client if requestId not provided (GET:RESULT, POST:RESULT, ...) |
 
-When you start the router, as a third parameter, you may use a callback to handle user connection :
+When you start the router, as a second optional parameter, you may use a callback to handle user connection :
 
 ```javascript
-router.start(io, true, function(socket) {
+router.start(io, function(socket) {
   console.log("User connected on : " + socket);
 });
 ```
@@ -302,12 +193,15 @@ restful.io is currently under heavy development. I'm building this project for m
 - Error handling is very approximative
 - socket.io only
 
+#### Urgent TODO
+- Update README for version 0.0.11
+- Update examples for version 0.0.11
+
 #### Currently working on
-- Better authentication support
-- Known limitations
+- Get rid of socket.io to use raw websockets
 - File support
-- Get rid of the context object
+- Built-in authentication support
+- Known limitations
 
 #### Ideas for later
-- Get rid of socket.io to use raw Websockets ?
-- Client module ?
+- Client module
