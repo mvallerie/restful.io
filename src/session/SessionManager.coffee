@@ -1,25 +1,41 @@
 _ = require 'underscore'
 
 Tokenizer = require './Tokenizer'
+Session = require './Session'
 
-module.exports = class TokenAuthHandler
-  constructor: (@tokens = []) ->
+module.exports = class SessionManager
+  constructor: (@sessions = []) ->
 
-  handleRoutes: (routes) =>
-    @routes = routes
+  getSession: (token) => () =>
+    _.find @sessions, (s) -> s.token == token
 
-  handleRequest: (route, data) =>
-    if route.token? && _(@tokens).contains(route.token)
-      route.follow()
-    else
-      route.FORBIDDEN("Authentication failed for token: #{route.token}")
-
-
-  login: (route, data) =>
+  createSession: (route) => (session = {}) =>
     token = Tokenizer.get()
-    @tokens.push(token)
-    route.OK(token)
+    s = new Session(token)
+    for k,v of session
+      s.data[k] = v
+    @sessions.push(s)
+    route.bindSession @createSession(route), @getSession(token), @putSession(token)
 
-  logout: (route) =>
-    @tokens = _(@tokens).filter (e) -> e != route.token
-    route.OK()
+  putSession: (token) => (session = {}) =>
+    @sessions = _.map @sessions, (s) ->
+      if s.token == token
+        session
+      else
+        s
+
+  handleRequest: (route, token, data) =>
+    if route.public != true
+      if token? && token != ""
+        route.bindSession @createSession(route), @getSession(token), @putSession(token)
+        session = @getSession(token)()
+        if session?
+          route.follow()
+        else
+          route.FORBIDDEN("Invalid token provided for private route : #{token}")
+      else
+        route.FORBIDDEN("No token provided for private route")
+    else
+      # Public routes
+      route.bindSession @createSession(route)
+      route.follow()

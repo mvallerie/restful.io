@@ -7,7 +7,7 @@ $this = module.exports
   hash = crypto.createHash 'sha512'
 
   seedLen = 128
-  _.chain([1..seedLen]).map (e) ->
+  _.chain([1..seedLen]).shuffle().map (e) ->
     String.fromCharCode e
   .each (e) ->
     hash.update e
