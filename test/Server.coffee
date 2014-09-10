@@ -7,6 +7,6 @@ module.exports = (controllers, routes) ->
   RestfulRouter = require('../index')
 
   router = new RestfulRouter(controllers, routes, true)
-  router.start(io, true)
+  router.start(io)
 
   http.listen 4242

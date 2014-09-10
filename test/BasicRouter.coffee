@@ -13,6 +13,10 @@ controllers = {
       route.OK("bar")
     private: (route) ->
       route.OK("private")
+    login: (route) ->
+      route.withNewSession({username: 'foo'}).OK()
+    me: (route, session) ->
+      route.OK(session.data.username)
   }
 }
 
@@ -26,6 +30,15 @@ routes = {
     {
       uri: "/private"
       to: "FooController.private()"
+    },
+    {
+      uri: "/login"
+      to: "FooController.login()"
+      public: true
+    },
+    {
+      uri: "/me"
+      to: "FooController.me()"
     }
   ]
 }
@@ -63,7 +76,25 @@ describe 'Router', () ->
         catch e
           done(e)
 
+    it 'should store data in session and return OK', (done) ->
+      API.GET '/login', {}, (result) ->
+        try
+          result.should.have.property 'status', 200
+          result.should.have.property 'data'
+          API.token = result.headers.token
+
+          API.GET '/me', {}, (result) ->
+            try
+              result.should.have.property 'status', 200
+              result.should.have.property 'data', 'foo'
+              done()
+            catch e
+              done(e)
+        catch e
+          done(e)
+
     # TODO
+    ###
     it 'should return OK { private }', (done) ->
       API.GET '/private', {}, (result) ->
         try
@@ -72,3 +103,4 @@ describe 'Router', () ->
           done()
         catch e
           done(e)
+    ###
