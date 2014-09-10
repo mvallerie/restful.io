@@ -1,11 +1,11 @@
 module.exports = class RestfulRoute
-  constructor: (@ctx, @method, @uri, @routeHandler, @params, @jsonParams, @jsonParameterPrefix, @endCallback, @verbose = false) ->
+  constructor: (@ctx, @method, @uri, @public, @routeHandler, @params, @jsonParams, @jsonParameterPrefix, @endCallback, @verbose = false, @session = {}, @headers = {}) ->
 
   log: (str) =>
     if @verbose then console.log "[LOG] RestfulRoute #{@method} #{@uri} : #{str}"
 
   OK: (data = {}) =>
-    @endCallback {status: 200, data: data}
+    @endCallback {status: 200, headers: @headers, data: data}
 
   FORBIDDEN: (err = "(empty)") =>
     @log "FORBIDDEN"
@@ -18,6 +18,20 @@ module.exports = class RestfulRoute
   NOT_FOUND: (err = "(empty)") =>
     @log "NOT_FOUND"
     @endCallback {status: 404, err: err}
+
+  bindSession: (@createSession, @getSession, @putSession) =>
+    @
+
+  withSession: (s = {}) =>
+    @putSession(s)
+    @
+
+  withNewSession: (s = {}) =>
+    @createSession(s).withHeader("token", @getSession().token)
+
+  withHeader: (k, v) =>
+    @headers[k] = v
+    @
 
 
   # TODO REALLY needs REGEXP...quick and dirty work
@@ -49,4 +63,5 @@ module.exports = class RestfulRoute
           else
             @params[arg]
         )
+    if @getSession? then paramStack.push(@getSession())
     paramStack

@@ -1,10 +1,8 @@
 toSource = require 'tosource'
+_ = require 'underscore'
 
 Route = require './route'
-handlers =
-  TokenAuthHandler: require './auth/TokenAuthHandler'
-  UserGroupAuthHandler: require './auth/UserGroupAuthHandler'
-
+SessionManager = require('./session/SessionManager')
 
 module.exports = class RestfulRouter
 
@@ -13,14 +11,12 @@ module.exports = class RestfulRouter
   log: (str) ->
     console.log "[LOG] RestfulRouter: #{str}"
 
-  start: (io, publicAPI = false, beforeRouting = undefined) =>
+  start: (io, beforeRouting = undefined) =>
     @log "Router started"
 
-    if publicAPI != false
-      if typeof publicAPI == "object" then @authHandler = publicAPI
-      else @authHandler = new handlers.TokenAuthHandler()
-      @authHandler.handleRoutes(@routes)
-      @bindPublicAPI()
+
+    @sessionManager = new SessionManager()
+    @bindPublicAPI()
 
     io.on "connection", (socket) =>
       beforeRouting?(socket)
@@ -50,51 +46,14 @@ module.exports = class RestfulRouter
 
     if !@routes.GET? then @routes.GET = []
 
-    defaultLoginImpl = (authHandler) -> (route, authData) ->
-      authHandler.login route, authData
-
-    defaultLogoutImpl = (authHandler) -> (route) ->
-      authHandler.logout route
-
-
-    if @ctx["APIController"]?
-      getHook = @ctx["APIController"].get
-      @ctx["APIController"].get = (route) ->
-        route.OK(SrcAPI(if getHook? then getHook(API) else API))
-
-      # TODO disable auth hooks for now. Need to think about it.
-      if @authHandler?
-        #loginHook = @ctx["APIController"].login
-        #if not loginHook?
-          @ctx["APIController"].login = defaultLoginImpl(@authHandler)
-        #else
-        #  @ctx["APIController"].login = (route, authdata) =>
-        #    loginHook(route, authdata, @authHandler)
-
-
-        #logoutHook = @ctx["APIController"].logout
-        #if not logoutHook?
-          @ctx["APIController"].logout = defaultLogoutImpl(@authHandler)
-        #else
-        #  @ctx["APIController"].logout = (route) =>
-        #    logoutHook(route, @authHandler)
-    else
-      @ctx["APIController"] = {
-        get: (route) -> route.OK(SrcAPI(API))
-
-        login: (if @authHandler? then defaultLoginImpl(@authHandler) else undefined)
-
-        logout: (if @authHandler? then defaultLogoutImpl(@authHandler) else undefined)
-      }
+    if not @ctx["APIController"]?
+      @ctx["APIController"] = {}
+    getHook = @ctx["APIController"].get
+    @ctx["APIController"].get = (route) ->
+      route.OK(SrcAPI(if getHook? then getHook(API) else API))
 
     apiRoute = {uri: "/api", to: "APIController.get()", public: true}
     @routes.GET.push(apiRoute)
-
-    if @authHandler?
-      loginRoute = {uri: "/api/login", to: "APIController.login(j:auth)", public: true}
-      logoutRoute = {uri: "/api/logout", to: "APIController.logout()"}
-      @routes.GET.push(loginRoute, logoutRoute)
-
 
   getPublicAPI: (routes, nestedIn = undefined) =>
     result = {requestId: 0}
@@ -108,7 +67,7 @@ module.exports = class RestfulRouter
             return function(uri, json, callback) {
               this.requestId = this.requestId + 1;
               var params = {
-                requestId: this.requestId, uri: uri, json: json #{if @authHandler? then ", token: API.token"}
+                requestId: this.requestId, uri: uri, json: json, token: API.token
               };
 
               if(callback != undefined) API.socket.on('#{absmethod}:'+this.requestId, function(data) {
@@ -150,17 +109,11 @@ module.exports = class RestfulRouter
           routeHandler = route.to
           requestId = if data.requestId? then data.requestId else @resultSuffix
 
-          r = new Route(@ctx, methodName, route.uri, routeHandler, params, json, @jsonParameterPrefix, (result) =>
+          r = new Route(@ctx, methodName, route.uri, route.public, routeHandler, params, json, @jsonParameterPrefix, (result) =>
             socket.emit "#{methodName}#{@methodSeparator}#{requestId}", result
           , @verbose)
-          if @authHandler?
-            if data.token? && data.token != "" then r.token = data.token
-            if route.public != true
-              @authHandler.handleRequest r, params
-            else
-              r.follow()
-          else
-            r.follow()
+
+          @sessionManager.handleRequest r, data.token, params
 
           return
 
