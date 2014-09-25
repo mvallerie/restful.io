@@ -198,10 +198,11 @@ restful.io is currently under heavy development. I'm building this project for m
 - Update examples for version 0.0.11
 
 #### Currently working on
-- Get rid of socket.io to use raw websockets
 - File support
 - Built-in authentication support
+- Using socket.io namespaces
 - Known limitations
 
 #### Ideas for later
 - Client module
+- Get rid of socket.io to use raw websockets ?
