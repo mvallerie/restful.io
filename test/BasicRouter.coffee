@@ -17,6 +17,8 @@ controllers = {
       route.withNewSession({username: 'foo'}).OK()
     me: (route, session) ->
       route.OK(session.data.username)
+    upFile: (route, stream) ->
+      route.OK()
   }
 }
 
@@ -39,6 +41,13 @@ routes = {
     {
       uri: "/me"
       to: "FooController.me()"
+    }
+  ],
+  POST: [
+    {
+      uri: "/upFile"
+      to: "FooController.upFile()"
+      stream: true
     }
   ]
 }
@@ -93,8 +102,7 @@ describe 'Router', () ->
         catch e
           done(e)
 
-    # TODO
-    ###
+
     it 'should return OK { private }', (done) ->
       API.GET '/private', {}, (result) ->
         try
@@ -103,4 +111,3 @@ describe 'Router', () ->
           done()
         catch e
           done(e)
-    ###
