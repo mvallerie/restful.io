@@ -1,208 +1,187 @@
 restful.io
 ==========
 
-restful.io has been designed to develop quickly a realtime routing system for your "RESTful-like" apps. It's using [socket.io](https://github.com/Automattic/socket.io) but the module does not depend on it
+restful.io is a micro framework built on the shoulders of [socket.io](http://socket.io). It was designed to get HTTP possibilities, without using HTTP itself. By using socket.io, transport layer is made completely abstract.
+
+I started this project because i needed a simple way to manage realtime routing on the server side. I do believe that a very light client (pure HTML and JS), communicating with the server layer using realtime technologies is a very good and extremely portable paradigm.
 
 Inspirations
 ------------
 - [Play Framework 2](https://github.com/playframework/playframework)
 - [Express.io](https://github.com/techpines/express.io)
 - RESTful architectures
+- [HTTP](http://fr.wikipedia.org/wiki/Hypertext_Transfer_Protocol)
 
 Installation
 ------------
 `npm install --save restful.io`
 
-Overview
+Main features
+------------
+* Routing system
+* Session management
+* Client API (needs to be improved)
+* File upload (using [socket.io-stream](https://www.npmjs.com/package/socket.io-stream))
+
+What does it look like
 -----
-Below is a quick presentation of the module. You may check examples subdir for more.
+Below is a quick presentation of the module in Coffeescript. You may check examples folder (currently ***NOT*** up to date) and test (currently up to date) folder for more.
 
 
-## Server-side
+### Routing
 
-```javascript
-var http = require('http').Server();
-var io = require("socket.io")(http);
+```coffeescript
+io = require('socket.io')(http)
+RestfulRouter = require "restful.io"
 
-var RestfulRouter = require("restful.io");
-
-var FooController = {
-  // each method of your controllers has to take the route as first parameter
-  bar: function(route, param) {
-    console.log("FooController.bar("+param+");");
-    route.OK("body");
-  },
-  barJson: function(route, jsonParam) {
-    console.log("FooController.barJson("+JSON.stringify(jsonParam)+");");
-    route.OK("body")
-    // You don't call any of the route's methods so no response
+controllers = {
+  UserController: {
+    findAll: (route) ->
+      route.OK("All users")
+    create: (route, user) ->
+      route.OK("User #{user.id} has been created")
   }
-};
+}
 
-// This ugly stuff is actually used to have a way to link route string and JS object
-var controllers = {
-  "FooController": FooController
-};
-
-var router = new RestfulRouter(controllers, {
-  // These are method names, feel free to change or to add
-  // Here I used GET/PUT/DELETE only to mimic classic RESTful app
+router = new RestfulRouter(controllers, {
   GET: [
     {
-      // p:varname indicates a primitive type parameter
-      // Parameter names are bound between uri and route handler
-      uri: "/foo/p:param",
-      to: "FooController.bar(param)"
-    },
-    // CAREFUL !! Route order matters.
-    // The following route will never get matched because 'useless' will be treated as 'param' for first route
-    {
-      uri: "/foo/useless",
-      to: "FooController.neverCalled()"
+      uri: "/user"
+      to: "UserController.findAll()"
+      public: true
     }
-    // You can add as many more routes as you wish
-  ],
+  ]
   PUT: [
     {
-      // j:varname indicates a JSON object parameter
-      // That means that the client have to send something which looks like => {user: {/* data */}}
-      uri: "/foo",
-      to: "FooController.barJson(j:user)"
+      uri: "/user"
+      to: "UserController.create(p:user)"
+      public: true
     }
-  ],
-  POST: [
-  ],
-  DELETE: [
-  ],
-  // Nested methods are supported
-  FOO: {
-    BAR: [
-      // Here, the method will be FOO:BAR (':' is the default separator)
-      // No route yet
-    ]
-  }
-}, true);
+  ]
+}, true)
 
-router.start(io);
-
-http.listen(8080);
+router.start(io)
 ```
 
-### Route methods
+### Session management
 
-| Name | Parameters | Effect | Example |
+No "public" attributes for routes. Those routes are considered as "private", which means you need a valid session to access them. When you will get it, it will be automagically injected on private routes.
+
+```coffeescript
+controllers = {
+  UserController: {
+    login: (route, credentials) ->
+      route.withNewSession({username: credentials.username}).OK("You are now logged in")
+    me: (route, session) ->
+      route.OK("Welcome back #{session.username}")
+  }
+}
+
+router = new RestfulRouter(controllers, {
+  POST: [
+    {
+      uri: "/login"
+      to: "UserController.login(p:credentials)"
+      public: true
+    }
+  ]
+  GET: [
+    {
+      uri: "/me"
+      to: "UserController.me()"
+    }
+  ]
+}, true)
+
+router.start(io)
+```
+
+### Client API
+
+On the client side, you may create this file :
+
+```coffeescript
+io = require 'socket.io-client'
+ss = require 'socket.io-stream'
+
+module.exports = (callback) ->
+  socket = io('http://yourdomain.com:1234')
+  socket.on 'connect', () ->
+    socket.emit('GET:/api')
+
+    socket.on 'GET:RESULT', (apiSrc) ->
+      API = eval(apiSrc.data)(socket, ss, true)
+      callback(API)
+```
+
+Then :
+
+```coffeescript
+require("./yourfile.coffee") (API) ->
+  # Feel free to use API object :)
+  API.POST '/login', {credentials: {username: 'foobar'}}, (result) ->
+    # Here we set the "token" (session id)
+    API.token = result.headers.token
+    API.GET '/me', {}, (result) ->
+      console.log result.data
+```
+
+### File upload
+
+TODO
+
+
+
+API
+----
+
+### Server
+
+##### Route object
+
+| Method | Parameters | Effect | Example |
 | ---- | ---- | -------- | ------  |
 | OK  | data: * | Sends back data to the client with a 200 result | route.OK({message: "done"}) |
 | FORBIDDEN | err: * | Sends back err to the client with a 403 result | route.FORBIDDEN("Error !!") |
 | ISE | err: * | Sends back err to the client with a 500 result | route.ISE("Error !!") |
 | NOT_FOUND | err: * | Sends back err to the client with a 404 result | route.NOT_FOUND("Error !!") |
 
-## Client API
+##### Result object
 
-Now on the client side, you can make a GET on /api to retrieve the code of the API object :
+| Property | Possible values |
+| -------- | ----------------- |
+| status  | 200, 403, 500, 404 |
+| data | any string |
+| headers | JS object, used for token |
 
+### Client
 
-```javascript
-var socket = io('http://localhost:8080');
-socket.on('connect', function() {
-  // Here we wait for API
-  socket.on('GET:RESULT', function(apiSrc) {
-    // You get JS code to eval
-    var API = eval(apiSrc)(socket);
-      // Get foo 1
-      API.GET("/foo/1", {}, function(result) {
-        console.log("Result GET : " + JSON.stringify(result));
+##### API object
 
-        API.PUT("/foo", {
-          user: {
-            name: "John Smith",
-            age: 42
-          }
-        }, function(result) {
-          console.log("Result PUT : " + JSON.stringify(result));
-        });
+API object is automatically generated from your routes. Basically, the way to call a route is :
 
-      });
-
-    });
-
-  // Asking for API
-  socket.emit('GET', '/api');
-});
+```coffeescript
+API.METHOD '/route/you.want', {param:"foobar"}, (result) ->
+  # Use the result here
 ```
 
-By default, API's code is automagically generated using your routes. For nested methods, use subobjects :
+The only special property you have to worry about is "token" which is your session id.
 
-```javascript
-API.FOO.BAR; // Corresponds to nested method BAR inside FOO
+Tests
+----
+```shell
+npm test
 ```
 
-Please note that every autogenerated function in API has the same signature :
-
-```javascript
-API.YOUR_METHOD(uri, jsonParams, callback)
-```
-
-
-##### Extending API
-
-If you need to expose to client more API methods than autogenerated ones, just provide an APIController inside router context and create a method inside with the following signature :
-
-```javascript
-function get(API) {
-  // Do your stuff and add your custom methods here
-  // Remember that API code is sent WITHOUT the context, so never use variables which doesn't live in API context.
-  return API;
-}
-```
-
-## Session support
-
-TODO
-
-
-## And more
-
-Here is described the usable parameters when constructing a router :
-
-| Name | Type | Defaults | Example |
-| ---- | ---- | -------- | ------  |
-| ctx  | JSON Object | NA | { "FooController": FooController, "BarController": BarController } |
-| routes | JSON Object | NA | Main JSON config. See snippet before |
-| verbose | boolean | false | If true, much more log will appear |
-| methodSeparator | character | ':' | Used for nested methods. |
-| uriSeparator | character | '/' | Used to parse URIs. |
-| parameterPrefix | string | "p:" | Used to identify primitive parameter in route URI. |
-| jsonParameterPrefix | string | "j:" | Used to identify complex JSON parameter in route handler call. |
-| resultSuffix | string | "RESULT" | Default requestId fired to client if requestId not provided (GET:RESULT, POST:RESULT, ...) |
-
-When you start the router, as a second optional parameter, you may use a callback to handle user connection :
-
-```javascript
-router.start(io, function(socket) {
-  console.log("User connected on : " + socket);
-});
-```
 
 Warranty
 --------
 restful.io is currently under heavy development. I'm building this project for myself and i try to make the code as clean as possible (which is far away from now :)). Feel free to submit a PR. Same for this README.
 
-#### Known limitations
-- Route parsing is poor and must be rewritten
-- Error handling is very approximative
-- socket.io only
 
-#### Urgent TODO
-- Update README for version 0.0.11
-- Update examples for version 0.0.11
-
-#### Currently working on
+Currently working on
+---------
+- Update examples
+- True client API
 - File support
-- Built-in authentication support
 - Using socket.io namespaces
-- Known limitations
-
-#### Ideas for later
-- Client module
-- Get rid of socket.io to use raw websockets ?
