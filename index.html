@@ -16,7 +16,7 @@
     <div class="wrapper">
       <header>
         <h1>restful.io</h1>
-        <p>Restful-like routing module for NodeJS and socket.io</p>
+        <p>HTTP-like realtime routing module for NodeJS built on top of socket.io</p>
 
         <p class="view"><a href="https://github.com/mvallerie/restful.io">View the Project on GitHub <small>mvallerie/restful.io</small></a></p>
 
@@ -29,107 +29,158 @@
       </header>
       <section>
         <h1>
-<a name="restfulio" class="anchor" href="#restfulio"><span class="octicon octicon-link"></span></a>restful.io</h1>
+<a id="restfulio" class="anchor" href="#restfulio" aria-hidden="true"><span class="octicon octicon-link"></span></a>restful.io</h1>
 
-<p>restful.io has been designed to develop quickly a realtime routing system for your "RESTful-like" apps. It's using <a href="https://github.com/Automattic/socket.io">socket.io</a> but the module does not depend on it</p>
+<p>restful.io is a micro framework built on the shoulders of <a href="http://socket.io">socket.io</a>. It was designed to get HTTP possibilities, without using HTTP itself. By using socket.io, transport layer is made completely abstract.</p>
+
+<p>I started this project because i needed a simple way to manage realtime routing on the server side. I do believe that a very light client (pure HTML and JS), communicating with the server layer using realtime technologies is a very good and extremely portable paradigm.</p>
 
 <h2>
-<a name="inspirations" class="anchor" href="#inspirations"><span class="octicon octicon-link"></span></a>Inspirations</h2>
+<a id="inspirations" class="anchor" href="#inspirations" aria-hidden="true"><span class="octicon octicon-link"></span></a>Inspirations</h2>
 
 <ul>
 <li><a href="https://github.com/playframework/playframework">Play Framework 2</a></li>
 <li><a href="https://github.com/techpines/express.io">Express.io</a></li>
 <li>RESTful architectures</li>
-</ul><h2>
-<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
+<li><a href="http://fr.wikipedia.org/wiki/Hypertext_Transfer_Protocol">HTTP</a></li>
+</ul>
+
+<h2>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
 
 <p><code>npm install --save restful.io</code></p>
 
 <h2>
-<a name="overview" class="anchor" href="#overview"><span class="octicon octicon-link"></span></a>Overview</h2>
+<a id="main-features" class="anchor" href="#main-features" aria-hidden="true"><span class="octicon octicon-link"></span></a>Main features</h2>
 
-<p>Below is a quick presentation of the module. You may check examples subdir for more.</p>
+<ul>
+<li>Routing system</li>
+<li>Session management</li>
+<li>Client API (needs to be improved)</li>
+<li>File upload (using <a href="https://www.npmjs.com/package/socket.io-stream">socket.io-stream</a>)</li>
+</ul>
 
 <h2>
-<a name="server-side" class="anchor" href="#server-side"><span class="octicon octicon-link"></span></a>Server-side</h2>
+<a id="what-does-it-look-like" class="anchor" href="#what-does-it-look-like" aria-hidden="true"><span class="octicon octicon-link"></span></a>What does it look like</h2>
 
-<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">http</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'http'</span><span class="p">).</span><span class="nx">Server</span><span class="p">();</span>
-<span class="kd">var</span> <span class="nx">io</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"socket.io"</span><span class="p">)(</span><span class="nx">http</span><span class="p">);</span>
-
-<span class="kd">var</span> <span class="nx">RestfulRouter</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"restful.io"</span><span class="p">);</span>
-
-<span class="kd">var</span> <span class="nx">FooController</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="c1">// each method of your controllers has to take the route as first parameter</span>
-  <span class="nx">bar</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">route</span><span class="p">,</span> <span class="nx">param</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"FooController.bar("</span><span class="o">+</span><span class="nx">param</span><span class="o">+</span><span class="s2">");"</span><span class="p">);</span>
-    <span class="nx">route</span><span class="p">.</span><span class="nx">OK</span><span class="p">(</span><span class="s2">"body"</span><span class="p">);</span>
-  <span class="p">},</span>
-  <span class="nx">barJson</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">route</span><span class="p">,</span> <span class="nx">jsonParam</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"FooController.barJson("</span><span class="o">+</span><span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">jsonParam</span><span class="p">)</span><span class="o">+</span><span class="s2">");"</span><span class="p">);</span>
-    <span class="nx">route</span><span class="p">.</span><span class="nx">OK</span><span class="p">(</span><span class="s2">"body"</span><span class="p">)</span>
-    <span class="c1">// You don't call any of the route's methods so no response</span>
-  <span class="p">}</span>
-<span class="p">};</span>
-
-<span class="c1">// This ugly stuff is actually used to have a way to link route string and JS object</span>
-<span class="kd">var</span> <span class="nx">controllers</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="s2">"FooController"</span><span class="o">:</span> <span class="nx">FooController</span>
-<span class="p">};</span>
-
-<span class="kd">var</span> <span class="nx">router</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">RestfulRouter</span><span class="p">(</span><span class="nx">controllers</span><span class="p">,</span> <span class="p">{</span>
-  <span class="c1">// These are method names, feel free to change or to add</span>
-  <span class="c1">// Here I used GET/PUT/DELETE only to mimic classic RESTful app</span>
-  <span class="nx">GET</span><span class="o">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="c1">// p:varname indicates a primitive type parameter</span>
-      <span class="c1">// Parameter names are bound between uri and route handler</span>
-      <span class="nx">uri</span><span class="o">:</span> <span class="s2">"/foo/p:param"</span><span class="p">,</span>
-      <span class="nx">to</span><span class="o">:</span> <span class="s2">"FooController.bar(param)"</span>
-    <span class="p">},</span>
-    <span class="c1">// CAREFUL !! Route order matters.</span>
-    <span class="c1">// The following route will never get matched because 'useless' will be treated as 'param' for first route</span>
-    <span class="p">{</span>
-      <span class="nx">uri</span><span class="o">:</span> <span class="s2">"/foo/useless"</span><span class="p">,</span>
-      <span class="nx">to</span><span class="o">:</span> <span class="s2">"FooController.neverCalled()"</span>
-    <span class="p">}</span>
-    <span class="c1">// You can add as many more routes as you wish</span>
-  <span class="p">],</span>
-  <span class="nx">PUT</span><span class="o">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="c1">// j:varname indicates a JSON object parameter</span>
-      <span class="c1">// That means that the client have to send something which looks like =&gt; {user: {/* data */}}</span>
-      <span class="nx">uri</span><span class="o">:</span> <span class="s2">"/foo"</span><span class="p">,</span>
-      <span class="nx">to</span><span class="o">:</span> <span class="s2">"FooController.barJson(j:user)"</span>
-    <span class="p">}</span>
-  <span class="p">],</span>
-  <span class="nx">POST</span><span class="o">:</span> <span class="p">[</span>
-  <span class="p">],</span>
-  <span class="nx">DELETE</span><span class="o">:</span> <span class="p">[</span>
-  <span class="p">],</span>
-  <span class="c1">// Nested methods are supported</span>
-  <span class="nx">FOO</span><span class="o">:</span> <span class="p">{</span>
-    <span class="nx">BAR</span><span class="o">:</span> <span class="p">[</span>
-      <span class="c1">// Here, the method will be FOO:BAR (':' is the default separator)</span>
-      <span class="c1">// No route yet</span>
-    <span class="p">]</span>
-  <span class="p">}</span>
-<span class="p">},</span> <span class="kc">true</span><span class="p">);</span>
-
-<span class="nx">router</span><span class="p">.</span><span class="nx">start</span><span class="p">(</span><span class="nx">io</span><span class="p">);</span>
-
-<span class="nx">http</span><span class="p">.</span><span class="nx">listen</span><span class="p">(</span><span class="mi">8080</span><span class="p">);</span>
-</pre></div>
+<p>Below is a quick presentation of the module in Coffeescript. You may check examples folder (currently <strong><em>NOT</em></strong> up to date) and test (currently up to date) folder for more.</p>
 
 <h3>
-<a name="route-methods" class="anchor" href="#route-methods"><span class="octicon octicon-link"></span></a>Route methods</h3>
+<a id="routing" class="anchor" href="#routing" aria-hidden="true"><span class="octicon octicon-link"></span></a>Routing</h3>
+
+<div class="highlight highlight-coffeescript"><pre><span class="pl-v"><span class="pl-v">io <span class="pl-k">=</span></span></span> <span class="pl-s3">require</span>(<span class="pl-s1"><span class="pl-pds">'</span>socket.io<span class="pl-pds">'</span></span>)(http)
+<span class="pl-v"><span class="pl-v">RestfulRouter <span class="pl-k">=</span></span></span> <span class="pl-s3">require</span> <span class="pl-s1"><span class="pl-pds">"</span>restful.io<span class="pl-pds">"</span></span>
+
+<span class="pl-v"><span class="pl-v">controllers <span class="pl-k">=</span></span></span> {
+  <span class="pl-v"><span class="pl-v">UserController:</span></span> {
+    <span class="pl-en">findAll</span><span class="pl-k">:</span><span class="pl-vpf"> <span class="pl-vpf">(route)</span></span> <span class="pl-st"><span class="pl-st">-&gt;</span></span>
+      route.OK(<span class="pl-s1"><span class="pl-pds">"</span>All users<span class="pl-pds">"</span></span>)
+    <span class="pl-en">create</span><span class="pl-k">:</span><span class="pl-vpf"> <span class="pl-vpf">(route, user)</span></span> <span class="pl-st"><span class="pl-st">-&gt;</span></span>
+      route.OK(<span class="pl-s1"><span class="pl-pds">"</span>User <span class="pl-s2"><span class="pl-pse">#{</span>user.id<span class="pl-pse">}</span></span> has been created<span class="pl-pds">"</span></span>)
+  }
+}
+
+<span class="pl-v"><span class="pl-v">router <span class="pl-k">=</span></span></span> <span class="pl-k">new</span> <span class="pl-en">RestfulRouter</span>(controllers, {
+  <span class="pl-v"><span class="pl-v">GET:</span></span> [
+    {
+      <span class="pl-v"><span class="pl-v">uri:</span></span> <span class="pl-s1"><span class="pl-pds">"</span>/user<span class="pl-pds">"</span></span>
+      <span class="pl-v"><span class="pl-v">to:</span></span> <span class="pl-s1"><span class="pl-pds">"</span>UserController.findAll()<span class="pl-pds">"</span></span>
+      <span class="pl-v"><span class="pl-v">public:</span></span> <span class="pl-c1">true</span>
+    }
+  ]
+  <span class="pl-v"><span class="pl-v">PUT:</span></span> [
+    {
+      <span class="pl-v"><span class="pl-v">uri:</span></span> <span class="pl-s1"><span class="pl-pds">"</span>/user<span class="pl-pds">"</span></span>
+      <span class="pl-v"><span class="pl-v">to:</span></span> <span class="pl-s1"><span class="pl-pds">"</span>UserController.create(p:user)<span class="pl-pds">"</span></span>
+      <span class="pl-v"><span class="pl-v">public:</span></span> <span class="pl-c1">true</span>
+    }
+  ]
+}, <span class="pl-c1">true</span>)
+
+router.start(io)</pre></div>
+
+<h3>
+<a id="session-management" class="anchor" href="#session-management" aria-hidden="true"><span class="octicon octicon-link"></span></a>Session management</h3>
+
+<p>No "public" attributes for routes. Those routes are considered as "private", which means you need a valid session to access them. When you will get it, it will be automagically injected on private routes.</p>
+
+<div class="highlight highlight-coffeescript"><pre><span class="pl-v"><span class="pl-v">controllers <span class="pl-k">=</span></span></span> {
+  <span class="pl-v"><span class="pl-v">UserController:</span></span> {
+    <span class="pl-en">login</span><span class="pl-k">:</span><span class="pl-vpf"> <span class="pl-vpf">(route, credentials)</span></span> <span class="pl-st"><span class="pl-st">-&gt;</span></span>
+      route.withNewSession({<span class="pl-v"><span class="pl-v">username:</span></span> credentials.username}).OK(<span class="pl-s1"><span class="pl-pds">"</span>You are now logged in<span class="pl-pds">"</span></span>)
+    <span class="pl-en">me</span><span class="pl-k">:</span><span class="pl-vpf"> <span class="pl-vpf">(route, session)</span></span> <span class="pl-st"><span class="pl-st">-&gt;</span></span>
+      route.OK(<span class="pl-s1"><span class="pl-pds">"</span>Welcome back <span class="pl-s2"><span class="pl-pse">#{</span>session.username<span class="pl-pse">}</span></span><span class="pl-pds">"</span></span>)
+  }
+}
+
+<span class="pl-v"><span class="pl-v">router <span class="pl-k">=</span></span></span> <span class="pl-k">new</span> <span class="pl-en">RestfulRouter</span>(controllers, {
+  <span class="pl-v"><span class="pl-v">POST:</span></span> [
+    {
+      <span class="pl-v"><span class="pl-v">uri:</span></span> <span class="pl-s1"><span class="pl-pds">"</span>/login<span class="pl-pds">"</span></span>
+      <span class="pl-v"><span class="pl-v">to:</span></span> <span class="pl-s1"><span class="pl-pds">"</span>UserController.login(p:credentials)<span class="pl-pds">"</span></span>
+      <span class="pl-v"><span class="pl-v">public:</span></span> <span class="pl-c1">true</span>
+    }
+  ]
+  <span class="pl-v"><span class="pl-v">GET:</span></span> [
+    {
+      <span class="pl-v"><span class="pl-v">uri:</span></span> <span class="pl-s1"><span class="pl-pds">"</span>/me<span class="pl-pds">"</span></span>
+      <span class="pl-v"><span class="pl-v">to:</span></span> <span class="pl-s1"><span class="pl-pds">"</span>UserController.me()<span class="pl-pds">"</span></span>
+    }
+  ]
+}, <span class="pl-c1">true</span>)
+
+router.start(io)</pre></div>
+
+<h3>
+<a id="client-api" class="anchor" href="#client-api" aria-hidden="true"><span class="octicon octicon-link"></span></a>Client API</h3>
+
+<p>On the client side, you may create this file :</p>
+
+<div class="highlight highlight-coffeescript"><pre><span class="pl-v"><span class="pl-v">io <span class="pl-k">=</span></span></span> <span class="pl-s3">require</span> <span class="pl-s1"><span class="pl-pds">'</span>socket.io-client<span class="pl-pds">'</span></span>
+<span class="pl-v"><span class="pl-v">ss <span class="pl-k">=</span></span></span> <span class="pl-s3">require</span> <span class="pl-s1"><span class="pl-pds">'</span>socket.io-stream<span class="pl-pds">'</span></span>
+
+<span class="pl-en">module.exports </span><span class="pl-k">=</span><span class="pl-vpf"> <span class="pl-vpf">(callback)</span></span> <span class="pl-st"><span class="pl-st">-&gt;</span></span>
+  <span class="pl-v"><span class="pl-v">socket <span class="pl-k">=</span></span></span> io(<span class="pl-s1"><span class="pl-pds">'</span>http://yourdomain.com:1234<span class="pl-pds">'</span></span>)
+  socket.on <span class="pl-s1"><span class="pl-pds">'</span>connect<span class="pl-pds">'</span></span>, <span class="pl-vpf">()</span> <span class="pl-st">-&gt;</span>
+    socket.emit(<span class="pl-s1"><span class="pl-pds">'</span>GET:/api<span class="pl-pds">'</span></span>)
+
+    socket.on <span class="pl-s1"><span class="pl-pds">'</span>GET:RESULT<span class="pl-pds">'</span></span>, <span class="pl-vpf">(apiSrc)</span> <span class="pl-st">-&gt;</span>
+      <span class="pl-v"><span class="pl-v">API <span class="pl-k">=</span></span></span> <span class="pl-s3">eval</span>(apiSrc.data)(socket, ss, <span class="pl-c1">true</span>)
+      callback(API)</pre></div>
+
+<p>Then :</p>
+
+<div class="highlight highlight-coffeescript"><pre><span class="pl-s3">require</span>(<span class="pl-s1"><span class="pl-pds">"</span>./yourfile.coffee<span class="pl-pds">"</span></span>) <span class="pl-vpf">(API)</span> <span class="pl-st">-&gt;</span>
+  <span class="pl-c"># Feel free to use API object :)</span>
+  API.POST <span class="pl-s1"><span class="pl-pds">'</span>/login<span class="pl-pds">'</span></span>, {<span class="pl-v"><span class="pl-v">credentials:</span></span> {<span class="pl-v"><span class="pl-v">username:</span></span> <span class="pl-s1"><span class="pl-pds">'</span>foobar<span class="pl-pds">'</span></span>}}, <span class="pl-vpf">(result)</span> <span class="pl-st">-&gt;</span>
+    <span class="pl-c"># Here we set the "token" (session id)</span>
+    <span class="pl-v"><span class="pl-v">API.token <span class="pl-k">=</span></span></span> result.headers.token
+    API.GET <span class="pl-s1"><span class="pl-pds">'</span>/me<span class="pl-pds">'</span></span>, {}, <span class="pl-vpf">(result)</span> <span class="pl-st">-&gt;</span>
+      <span class="pl-en">console</span>.<span class="pl-s3">log</span> result.data</pre></div>
+
+<h3>
+<a id="file-upload" class="anchor" href="#file-upload" aria-hidden="true"><span class="octicon octicon-link"></span></a>File upload</h3>
+
+<p>TODO</p>
+
+<h2>
+<a id="api" class="anchor" href="#api" aria-hidden="true"><span class="octicon octicon-link"></span></a>API</h2>
+
+<h3>
+<a id="server" class="anchor" href="#server" aria-hidden="true"><span class="octicon octicon-link"></span></a>Server</h3>
+
+<h5>
+<a id="route-object" class="anchor" href="#route-object" aria-hidden="true"><span class="octicon octicon-link"></span></a>Route object</h5>
 
 <table>
-<thead><tr>
-<th>Name</th>
+<thead>
+<tr>
+<th>Method</th>
 <th>Parameters</th>
 <th>Effect</th>
 <th>Example</th>
-</tr></thead>
+</tr>
+</thead>
 <tbody>
 <tr>
 <td>OK</td>
@@ -156,166 +207,65 @@
 <td>route.NOT_FOUND("Error !!")</td>
 </tr>
 </tbody>
-</table><h2>
-<a name="client-api" class="anchor" href="#client-api"><span class="octicon octicon-link"></span></a>Client API</h2>
-
-<p>Now on the client side, you can make a GET on /api to retrieve the code of the API object :</p>
-
-<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">(</span><span class="s1">'http://localhost:8080'</span><span class="p">);</span>
-<span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-  <span class="c1">// Here we wait for API</span>
-  <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'GET:RESULT'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">apiSrc</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">// You get JS code to eval</span>
-    <span class="kd">var</span> <span class="nx">API</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="nx">apiSrc</span><span class="p">)(</span><span class="nx">socket</span><span class="p">);</span>
-      <span class="c1">// Get foo 1</span>
-      <span class="nx">API</span><span class="p">.</span><span class="nx">GET</span><span class="p">(</span><span class="s2">"/foo/1"</span><span class="p">,</span> <span class="p">{},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Result GET : "</span> <span class="o">+</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">result</span><span class="p">));</span>
-
-        <span class="nx">API</span><span class="p">.</span><span class="nx">PUT</span><span class="p">(</span><span class="s2">"/foo"</span><span class="p">,</span> <span class="p">{</span>
-          <span class="nx">user</span><span class="o">:</span> <span class="p">{</span>
-            <span class="nx">name</span><span class="o">:</span> <span class="s2">"John Smith"</span><span class="p">,</span>
-            <span class="nx">age</span><span class="o">:</span> <span class="mi">42</span>
-          <span class="p">}</span>
-        <span class="p">},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-          <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Result PUT : "</span> <span class="o">+</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">result</span><span class="p">));</span>
-        <span class="p">});</span>
-
-      <span class="p">});</span>
-
-    <span class="p">});</span>
-
-  <span class="c1">// Asking for API</span>
-  <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'GET'</span><span class="p">,</span> <span class="s1">'/api'</span><span class="p">);</span>
-<span class="p">});</span>
-</pre></div>
-
-<p>By default, API's code is automagically generated using your routes. For nested methods, use subobjects :</p>
-
-<div class="highlight highlight-javascript"><pre><span class="nx">API</span><span class="p">.</span><span class="nx">FOO</span><span class="p">.</span><span class="nx">BAR</span><span class="p">;</span> <span class="c1">// Corresponds to nested method BAR inside FOO</span>
-</pre></div>
-
-<p>Please note that every autogenerated function in API has the same signature :</p>
-
-<div class="highlight highlight-javascript"><pre><span class="nx">API</span><span class="p">.</span><span class="nx">YOUR_METHOD</span><span class="p">(</span><span class="nx">uri</span><span class="p">,</span> <span class="nx">jsonParams</span><span class="p">,</span> <span class="nx">callback</span><span class="p">)</span>
-</pre></div>
+</table>
 
 <h5>
-<a name="extending-api" class="anchor" href="#extending-api"><span class="octicon octicon-link"></span></a>Extending API</h5>
-
-<p>If you need to expose to client more API methods than autogenerated ones, just provide an APIController inside router context and create a method inside with the following signature :</p>
-
-<div class="highlight highlight-javascript"><pre><span class="kd">function</span> <span class="nx">get</span><span class="p">(</span><span class="nx">API</span><span class="p">)</span> <span class="p">{</span>
-  <span class="c1">// Do your stuff and add your custom methods here</span>
-  <span class="c1">// Remember that API code is sent WITHOUT the context, so never use variables which doesn't live in API context.</span>
-  <span class="k">return</span> <span class="nx">API</span><span class="p">;</span>
-<span class="p">}</span>
-</pre></div>
-
-<h2>
-<a name="session-support" class="anchor" href="#session-support"><span class="octicon octicon-link"></span></a>Session support</h2>
-
-<p>TODO</p>
-
-<h2>
-<a name="and-more" class="anchor" href="#and-more"><span class="octicon octicon-link"></span></a>And more</h2>
-
-<p>Here is described the usable parameters when constructing a router :</p>
+<a id="result-object" class="anchor" href="#result-object" aria-hidden="true"><span class="octicon octicon-link"></span></a>Result object</h5>
 
 <table>
-<thead><tr>
-<th>Name</th>
-<th>Type</th>
-<th>Defaults</th>
-<th>Example</th>
-</tr></thead>
+<thead>
+<tr>
+<th>Property</th>
+<th>Possible values</th>
+</tr>
+</thead>
 <tbody>
 <tr>
-<td>ctx</td>
-<td>JSON Object</td>
-<td>NA</td>
-<td>{ "FooController": FooController, "BarController": BarController }</td>
+<td>status</td>
+<td>200, 403, 500, 404</td>
 </tr>
 <tr>
-<td>routes</td>
-<td>JSON Object</td>
-<td>NA</td>
-<td>Main JSON config. See snippet before</td>
+<td>data</td>
+<td>any string</td>
 </tr>
 <tr>
-<td>verbose</td>
-<td>boolean</td>
-<td>false</td>
-<td>If true, much more log will appear</td>
-</tr>
-<tr>
-<td>methodSeparator</td>
-<td>character</td>
-<td>':'</td>
-<td>Used for nested methods.</td>
-</tr>
-<tr>
-<td>uriSeparator</td>
-<td>character</td>
-<td>'/'</td>
-<td>Used to parse URIs.</td>
-</tr>
-<tr>
-<td>parameterPrefix</td>
-<td>string</td>
-<td>"p:"</td>
-<td>Used to identify primitive parameter in route URI.</td>
-</tr>
-<tr>
-<td>jsonParameterPrefix</td>
-<td>string</td>
-<td>"j:"</td>
-<td>Used to identify complex JSON parameter in route handler call.</td>
-</tr>
-<tr>
-<td>resultSuffix</td>
-<td>string</td>
-<td>"RESULT"</td>
-<td>Default requestId fired to client if requestId not provided (GET:RESULT, POST:RESULT, ...)</td>
+<td>headers</td>
+<td>JS object, used for token</td>
 </tr>
 </tbody>
-</table><p>When you start the router, as a second optional parameter, you may use a callback to handle user connection :</p>
+</table>
 
-<div class="highlight highlight-javascript"><pre><span class="nx">router</span><span class="p">.</span><span class="nx">start</span><span class="p">(</span><span class="nx">io</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">socket</span><span class="p">)</span> <span class="p">{</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"User connected on : "</span> <span class="o">+</span> <span class="nx">socket</span><span class="p">);</span>
-<span class="p">});</span>
-</pre></div>
+<h3>
+<a id="client" class="anchor" href="#client" aria-hidden="true"><span class="octicon octicon-link"></span></a>Client</h3>
+
+<h5>
+<a id="api-object" class="anchor" href="#api-object" aria-hidden="true"><span class="octicon octicon-link"></span></a>API object</h5>
+
+<p>API object is automatically generated from your routes. Basically, the way to call a route is :</p>
+
+<div class="highlight highlight-coffeescript"><pre>API.METHOD <span class="pl-s1"><span class="pl-pds">'</span>/route/you.want<span class="pl-pds">'</span></span>, {<span class="pl-v"><span class="pl-v">param:</span></span><span class="pl-s1"><span class="pl-pds">"</span>foobar<span class="pl-pds">"</span></span>}, <span class="pl-vpf">(result)</span> <span class="pl-st">-&gt;</span>
+  <span class="pl-c"># Use the result here</span></pre></div>
+
+<p>The only special property you have to worry about is "token" which is your session id.</p>
 
 <h2>
-<a name="warranty" class="anchor" href="#warranty"><span class="octicon octicon-link"></span></a>Warranty</h2>
+<a id="tests" class="anchor" href="#tests" aria-hidden="true"><span class="octicon octicon-link"></span></a>Tests</h2>
+
+<div class="highlight highlight-shell"><pre>npm <span class="pl-s3">test</span></pre></div>
+
+<h2>
+<a id="warranty" class="anchor" href="#warranty" aria-hidden="true"><span class="octicon octicon-link"></span></a>Warranty</h2>
 
 <p>restful.io is currently under heavy development. I'm building this project for myself and i try to make the code as clean as possible (which is far away from now :)). Feel free to submit a PR. Same for this README.</p>
 
-<h4>
-<a name="known-limitations" class="anchor" href="#known-limitations"><span class="octicon octicon-link"></span></a>Known limitations</h4>
+<h2>
+<a id="currently-working-on" class="anchor" href="#currently-working-on" aria-hidden="true"><span class="octicon octicon-link"></span></a>Currently working on</h2>
 
 <ul>
-<li>Route parsing is poor and must be rewritten</li>
-<li>Error handling is very approximative</li>
-<li>socket.io only</li>
-</ul><h4>
-<a name="urgent-todo" class="anchor" href="#urgent-todo"><span class="octicon octicon-link"></span></a>Urgent TODO</h4>
-
-<ul>
-<li>Update README for version 0.0.11</li>
-<li>Update examples for version 0.0.11</li>
-</ul><h4>
-<a name="currently-working-on" class="anchor" href="#currently-working-on"><span class="octicon octicon-link"></span></a>Currently working on</h4>
-
-<ul>
-<li>Get rid of socket.io to use raw websockets</li>
+<li>Update examples</li>
+<li>True client API</li>
 <li>File support</li>
-<li>Built-in authentication support</li>
-<li>Known limitations</li>
-</ul><h4>
-<a name="ideas-for-later" class="anchor" href="#ideas-for-later"><span class="octicon octicon-link"></span></a>Ideas for later</h4>
-
-<ul>
-<li>Client module</li>
+<li>Using socket.io namespaces</li>
 </ul>
       </section>
       <footer>
