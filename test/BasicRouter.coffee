@@ -17,8 +17,9 @@ controllers = {
       route.withNewSession({username: 'foo'}).OK()
     me: (route, session) ->
       route.OK(session.data.username)
-    upFile: (route, stream) ->
-      route.OK()
+    upFile: (route, stream, session) ->
+      stream.on 'data', (chunk) ->
+        route.OK(chunk)
   }
 }
 
@@ -108,6 +109,20 @@ describe 'Router', () ->
         try
           result.should.have.property 'status', 200
           result.should.have.property 'data', 'private'
+          done()
+        catch e
+          done(e)
+
+    it 'should send synchronously a basic stream to the server', (done) ->
+      stream = API.ss.createStream()
+      stream.write("TEST")
+      stream.end()
+
+      API.stream(stream).POST '/upFile', {}, (result) ->
+        try
+          result.should.have.property 'status', 200
+          result.should.have.property 'data'
+          result.data.toString().should.equal("TEST")
           done()
         catch e
           done(e)
