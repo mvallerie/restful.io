@@ -1,5 +1,5 @@
 module.exports = class RestfulRoute
-  constructor: (@ctx, @method, @uri, @public, @routeHandler, @params, @parameterPrefix, @endCallback, @verbose = false, @session = {}, @headers = {}) ->
+  constructor: (@ctx, @method, @uri, @public, @stream, @routeHandler, @params, @parameterPrefix, @endCallback, @verbose = false, @session = {}, @headers = {}) ->
 
   log: (str) =>
     if @verbose then console.log "[LOG] RestfulRoute #{@method} #{@uri} : #{str}"
@@ -63,5 +63,6 @@ module.exports = class RestfulRoute
           else
             arg
         )
+    if @stream? then paramStack.push(@stream)
     if @getSession? then paramStack.push(@getSession())
     paramStack
