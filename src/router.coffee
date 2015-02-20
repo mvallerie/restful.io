@@ -6,7 +6,7 @@ SessionManager = require('./session/SessionManager')
 
 module.exports = class RestfulRouter
 
-  constructor: (@ctx, @routes, @verbose = false, @methodSeparator = ':', @uriSeparator = '/', @parameterPrefix = 'p:', @jsonParameterPrefix = 'j:', @resultSuffix = 'RESULT') ->
+  constructor: (@ctx, @routes, @verbose = false, @methodSeparator = ':', @uriSeparator = '/', @parameterPrefix = 'p:', @resultSuffix = 'RESULT') ->
 
   log: (str) ->
     console.log "[LOG] RestfulRouter: #{str}"
@@ -103,17 +103,17 @@ module.exports = class RestfulRouter
       json = if typeof data == "string" then {} else data.json
 
       @log "Received request #{methodName} #{uri}"
+
       for route in methodData
-        params = @matchURI(uri, route.uri)
-        if params != false
+        if uri == route.uri
           routeHandler = route.to
           requestId = if data.requestId? then data.requestId else @resultSuffix
 
-          r = new Route(@ctx, methodName, route.uri, route.public, routeHandler, params, json, @jsonParameterPrefix, (result) =>
+          r = new Route(@ctx, methodName, route.uri, route.public, routeHandler, json, @parameterPrefix, (result) =>
             socket.emit "#{methodName}#{@methodSeparator}#{requestId}", result
           , @verbose)
 
-          @sessionManager.handleRequest r, data.token, params
+          @sessionManager.handleRequest r, data.token
 
           return
 
@@ -121,6 +121,7 @@ module.exports = class RestfulRouter
       @log "No route found for #{methodName} #{uri}"
 
   # TODO Needs regexp and / or good parsing method
+  ###
   matchURI: (uri, pattern) =>
     segmentedURI = uri.split(@uriSeparator)
     segmentedPattern = pattern.split(@uriSeparator)
@@ -136,3 +137,4 @@ module.exports = class RestfulRouter
             # Explicit return breaks the function
             return false
       params
+  ###

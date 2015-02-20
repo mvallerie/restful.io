@@ -1,5 +1,5 @@
 module.exports = class RestfulRoute
-  constructor: (@ctx, @method, @uri, @public, @routeHandler, @params, @jsonParams, @jsonParameterPrefix, @endCallback, @verbose = false, @session = {}, @headers = {}) ->
+  constructor: (@ctx, @method, @uri, @public, @routeHandler, @params, @parameterPrefix, @endCallback, @verbose = false, @session = {}, @headers = {}) ->
 
   log: (str) =>
     if @verbose then console.log "[LOG] RestfulRoute #{@method} #{@uri} : #{str}"
@@ -58,10 +58,10 @@ module.exports = class RestfulRoute
       for arg in args.split(',')
         arg = arg.trim()
         paramStack.push(
-          if arg.indexOf(@jsonParameterPrefix) == 0
-            @jsonParams[arg.substr(@jsonParameterPrefix.length)]
+          if arg.indexOf(@parameterPrefix) == 0
+            @params[arg.substr(@parameterPrefix.length)]
           else
-            @params[arg]
+            arg
         )
     if @getSession? then paramStack.push(@getSession())
     paramStack

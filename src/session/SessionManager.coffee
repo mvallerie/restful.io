@@ -24,7 +24,7 @@ module.exports = class SessionManager
       else
         s
 
-  handleRequest: (route, token, data) =>
+  handleRequest: (route, token) =>
     if route.public != true
       if token? && token != ""
         route.bindSession @createSession(route), @getSession(token), @putSession(token)
