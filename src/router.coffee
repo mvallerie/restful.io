@@ -66,7 +66,11 @@ module.exports = class RestfulRouter
       # Here, we "clone" the API
       for k,v of API
         newAPI[k] = v
-      newAPI._stream = stream.pipe(newAPI.ss.createStream())
+      if typeof(File) is "function" and stream instanceof File
+        newAPI._stream = newAPI.ss.createBlobReadStream(stream).pipe(newAPI.ss.createStream())
+      else
+        # We assume it's a regular stream
+        newAPI._stream = stream.pipe(newAPI.ss.createStream())
       newAPI
 
 
@@ -78,9 +82,6 @@ module.exports = class RestfulRouter
         # Here, "socket" variable will be provided by context when API will be evaled on client
         result[method] = eval("""(function() {
             return function(uri, json, callback) {
-              var sock = undefined;
-              if(this._stream) sock = this.ss(socket); else sock = socket;
-
               var params = {
                 requestId: new Date().getTime(), json: json, token: API.token
               };
@@ -93,10 +94,12 @@ module.exports = class RestfulRouter
 
               API.log('Sending #{absmethod} on ' + uri + ' with params:');
               API.log(JSON.stringify(params));
-              if(this._stream)
-                sock.emit('#{absmethod}#{@methodSeparator}'+uri, this._stream, params);
-              else
-                sock.emit('#{absmethod}#{@methodSeparator}'+uri, params);
+              if(this._stream) {
+                ss(socket).emit('#{absmethod}#{@methodSeparator}'+uri, this._stream, params);
+              }
+              else {
+                socket.emit('#{absmethod}#{@methodSeparator}'+uri, params);
+              }
             };
           })()""");
       else if typeof methodData == "object"
@@ -135,8 +138,9 @@ module.exports = class RestfulRouter
 
           @sessionManager.handleRequest r, data?.token
 
-        if route.stream?
-          ss(socket).on routeEvent, (stream, data) -> routeCallback(data, stream)
+        if route.stream == true
+          ss(socket).on routeEvent, (stream, data) ->
+            routeCallback(data, stream)
         else
           socket.on routeEvent, (data) -> routeCallback(data)
 
