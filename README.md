@@ -25,7 +25,7 @@ Main features
 
 What does it look like
 -----
-Below is a quick presentation of the module in Coffeescript. You may check examples folder (currently ***NOT*** up to date) and test (currently up to date) folder for more.
+Below is a quick presentation of the module in Coffeescript. You may check test folder for more.
 
 
 ### Routing
@@ -181,7 +181,7 @@ restful.io is currently under heavy development. I'm building this project for m
 
 Currently working on
 ---------
-- Update examples
+- Add some examples
 - True client API
 - File support
 - Using socket.io namespaces
