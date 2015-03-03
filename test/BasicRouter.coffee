@@ -4,6 +4,9 @@ chai = require 'chai'
 #chai.use(chaiAsPromised)
 chai.should()
 
+_ = require 'underscore'
+fs = require 'fs'
+
 # Basic server definition ##########################################
 ####################################################################
 ####################################################################
@@ -18,8 +21,14 @@ controllers = {
     me: (route, session) ->
       route.OK(session.data.username)
     upFile: (route, stream, session) ->
+      chunks = []
       stream.on 'data', (chunk) ->
-        route.OK(chunk)
+        chunks.push chunk
+      stream.on 'end', () ->
+        # Do something with chunks
+        route.OK({url: "files/file.txt"})
+      stream.on 'error', () ->
+        route.ISE()
   }
 }
 
@@ -113,16 +122,12 @@ describe 'Router', () ->
         catch e
           done(e)
 
-    it 'should send synchronously a basic stream to the server', (done) ->
-      stream = API.ss.createStream()
-      stream.write("TEST")
-      stream.end()
-
-      API.stream(stream).POST '/upFile', {}, (result) ->
+    it 'should send asynchronously file.txt to the server', (done) ->
+      API.stream(fs.createReadStream('test/resources/file.txt')).POST '/upFile', {}, (result) ->
         try
           result.should.have.property 'status', 200
           result.should.have.property 'data'
-          result.data.toString().should.equal("TEST")
+          result.data.should.have.property 'url'
           done()
         catch e
           done(e)
