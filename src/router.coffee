@@ -59,15 +59,14 @@ module.exports = class RestfulRouter
     @routes.GET.push(apiRoute)
 
   getPublicAPI: (routes, nestedIn = undefined) =>
-    result = {requestId: 0, _stream: false}
+    result = {_stream: false}
 
     result.stream = (stream) ->
       newAPI = {}
+      # Here, we "clone" the API
       for k,v of API
-        #console.log "#{k}  #{v}"
         newAPI[k] = v
-      newAPI._stream = stream
-      #console.log(newAPI.socket)
+      newAPI._stream = stream.pipe(newAPI.ss.createStream())
       newAPI
 
 
@@ -76,18 +75,17 @@ module.exports = class RestfulRouter
       absmethod = if nestedIn? then "#{nestedIn}#{@methodSeparator}#{method}" else method
       if Array.isArray(methodData)
         # TODO Templating ?
-        # Here, "socket" and "requestId" variables will be provided by context when API will be evaled on client
+        # Here, "socket" variable will be provided by context when API will be evaled on client
         result[method] = eval("""(function() {
             return function(uri, json, callback) {
               var sock = undefined;
               if(this._stream) sock = this.ss(socket); else sock = socket;
 
-              this.requestId = this.requestId + 1;
               var params = {
-                requestId: this.requestId, json: json, token: API.token
+                requestId: new Date().getTime(), json: json, token: API.token
               };
 
-              if(callback != undefined) socket.on('#{absmethod}:'+this.requestId, function(data) {
+              if(callback != undefined) socket.on('#{absmethod}#{@methodSeparator}'+params.requestId, function(data) {
                 API.log('Response from ' + uri + ' : ');
                 API.log(JSON.stringify(data));
                 callback(data);
@@ -104,7 +102,6 @@ module.exports = class RestfulRouter
       else if typeof methodData == "object"
         result[method] = @getPublicAPI(methodData, absmethod)
 
-    result.requestId = 0
     result._stream = false
 
     result
