@@ -14,6 +14,8 @@ controllers = {
   FooController: {
     foo: (route) ->
       route.OK("bar")
+    bar: (route, bar) ->
+      route.OK(bar)
     private: (route) ->
       route.OK("private")
     login: (route) ->
@@ -37,6 +39,11 @@ routes = {
     {
       uri: "/foo"
       to: "FooController.foo()"
+      public: true
+    },
+    {
+      uri: "/bar"
+      to: "FooController.bar(p:something)"
       public: true
     },
     {
@@ -83,6 +90,15 @@ describe 'Router', () ->
         try
           result.should.have.property 'status', 200
           result.should.have.property 'data', 'bar'
+          done()
+        catch e
+          done(e)
+
+    it 'should return OK { foobar }', (done) ->
+      API.GET '/bar', {something: "foobar"}, (result) ->
+        try
+          result.should.have.property 'status', 200
+          result.should.have.property 'data', 'foobar'
           done()
         catch e
           done(e)
