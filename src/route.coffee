@@ -1,23 +1,26 @@
+ss = require 'socket.io-stream'
+
 module.exports = class RestfulRoute
   constructor: (@ctx, @method, @uri, @public, @stream, @routeHandler, @params, @parameterPrefix, @endCallback, @verbose = false, @session = {}, @headers = {}) ->
+    @outStream = null
 
   log: (str) =>
     if @verbose then console.log "[LOG] RestfulRoute #{@method} #{@uri} : #{str}"
 
   OK: (data = {}) =>
-    @endCallback {status: 200, headers: @headers, data: data}
+    @endCallback {status: 200, headers: @headers, data: data}, @outStream
 
   FORBIDDEN: (err = "(empty)") =>
     @log "FORBIDDEN"
-    @endCallback {status: 403, err: err}
+    @endCallback {status: 403, err: err}, @outStream
 
   ISE: (err = "(empty)") =>
     @log "INTERNAL_SERVER_ERROR"
-    @endCallback {status: 500, err: err}
+    @endCallback {status: 500, err: err}, @outStream
 
   NOT_FOUND: (err = "(empty)") =>
     @log "NOT_FOUND"
-    @endCallback {status: 404, err: err}
+    @endCallback {status: 404, err: err}, @outStream
 
   bindSession: (@createSession, @getSession, @putSession) =>
     @
@@ -33,6 +36,9 @@ module.exports = class RestfulRoute
     @headers[k] = v
     @
 
+  withStream: (_stream) =>
+    @outStream = _stream.pipe(ss.createStream())
+    @
 
   # TODO REALLY needs REGEXP...quick and dirty work
   follow: () =>

@@ -86,11 +86,19 @@ module.exports = class RestfulRouter
                 requestId: new Date().getTime(), json: json, token: API.token
               };
 
-              if(callback != undefined) socket.on('#{absmethod}#{@methodSeparator}'+params.requestId, function(data) {
-                API.log('Response from ' + uri + ' : ');
-                API.log(JSON.stringify(data));
-                callback(data);
-              })
+              if(callback != undefined) {
+                var logWrapper = function(stream) {
+                  return function(data) {
+                    API.log('Response from ' + uri + ' : ');
+                    API.log(JSON.stringify(data));
+                    callback(data, stream);
+                  };
+                };
+                if(callback.length == 2)
+                  ss(socket).on('#{absmethod}#{@methodSeparator}'+params.requestId, function(stream, data) { logWrapper(stream)(data); });
+                else
+                  socket.on('#{absmethod}#{@methodSeparator}'+params.requestId, logWrapper());
+              }
 
               API.log('Sending #{absmethod} on ' + uri + ' with params:');
               API.log(JSON.stringify(params));
@@ -132,8 +140,11 @@ module.exports = class RestfulRouter
           routeHandler = route.to
           requestId = if data?.requestId? then data.requestId else @resultSuffix
 
-          r = new Route(@ctx, methodName, route.uri, route.public, stream, routeHandler, json, @parameterPrefix, (result) =>
-            socket.emit "#{methodName}#{@methodSeparator}#{requestId}", result
+          r = new Route(@ctx, methodName, route.uri, route.public, stream, routeHandler, json, @parameterPrefix, (result, stream = undefined) =>
+            if stream?
+              ss(socket).emit "#{methodName}#{@methodSeparator}#{requestId}", stream, result
+            else
+              socket.emit "#{methodName}#{@methodSeparator}#{requestId}", result
           , @verbose)
 
           @sessionManager.handleRequest r, data?.token
