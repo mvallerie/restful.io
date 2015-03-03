@@ -2,22 +2,22 @@
   "name": "restful.io",
   "version": "0.0.13",
   "dependencies": {
-    "markdown": "^0.5.0",
-    "socket.io": "^1.3.4",
-    "socket.io-stream": "^0.6.0",
-    "tosource": "^0.1.3",
-    "underscore": "^1.8.2"
+    "markdown": "^0.5",
+    "socket.io": "^1.3",
+    "socket.io-stream": "^0.6",
+    "tosource": "^0.1",
+    "underscore": "^1.8"
   },
   "description": "Restful-like routing module for NodeJS and socket.io",
   "main": "index.js",
   "devDependencies": {
-    "blanket": "^1.1.6",
-    "chai": "^2.1.0",
-    "chai-as-promised": "^4.2.0",
-    "coffee-script": "^1.9.1",
-    "mocha": "^2.1.0",
-    "q": "^1.2.0",
-    "socket.io-client": "^1.3.4"
+    "blanket": "^1.1",
+    "chai": "^2.1",
+    "chai-as-promised": "^4.2",
+    "coffee-script": "^1.9",
+    "mocha": "^2.1",
+    "q": "^1.2",
+    "socket.io-client": "^1.3"
   },
   "config": {
     "blanket": {
