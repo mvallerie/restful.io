@@ -1,6 +1,6 @@
 {
   "name": "restful.io",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "dependencies": {
     "markdown": "^0.5",
     "socket.io": "^1.3",
